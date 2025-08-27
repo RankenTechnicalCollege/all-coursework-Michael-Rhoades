@@ -11,6 +11,14 @@ document.getElementById('buttonShow').addEventListener("click", ()=> {
 
   userInput = document.getElementById('txtUserInput').value;
 
+  for (let i = 0; i < users.length; i++) 
+  {
+    if (userInput.toLowerCase() === users[i].toLowerCase()) 
+    {
+      isUser = `Hello, ${users[i]}!`;
+    }
+  }
+
   if (userInput.trim() === "") 
   {
     falsyResult = "This is a falsy value.";
@@ -56,13 +64,7 @@ document.getElementById('buttonShow').addEventListener("click", ()=> {
     falsyResult = "This is a falsy value.";
   }
 
-  for (let i = 0; i < users.length; i++) 
-  {
-    if (userInput.toLowerCase() === users[i].toLowerCase()) 
-    {
-      isUser = `Hello, ${users[i]}!`;
-    }
-  }
+
 
   document.getElementById('showText').innerText = `You entered: ${userInput}. ${isRight}\nType of input: ${typeof userInput}. ${falsyResult}\n${isUser}`;
 
