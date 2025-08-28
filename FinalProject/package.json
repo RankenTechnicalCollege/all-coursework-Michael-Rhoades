@@ -1,0 +1,33 @@
+{
+  "name": "finalproject",
+  "version": "1.0.0",
+  "description": "Issue Tracker for Tracking software bugsduring the software development life cycle.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "start-dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RankenTechnicalCollege/all-coursework-Michael-Rhoades.git"
+  },
+  "keywords": [
+    "Issue",
+    "Tracker",
+    "Michael",
+    "Rhoades"
+  ],
+  "author": "Michael Rhoades",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RankenTechnicalCollege/all-coursework-Michael-Rhoades/issues"
+  },
+  "homepage": "https://github.com/RankenTechnicalCollege/all-coursework-Michael-Rhoades#readme",
+  "dependencies": {
+    "debug": "^4.4.1",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0"
+  }
+}

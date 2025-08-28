@@ -21,9 +21,10 @@ do{
     console.log("Please enter a number.")
   }
   startTemp = await rl.question("What is the starting temperature?");
+  startTemp = parseFloat(startTemp);
   err2 = true;
 }
-while(startTemp.trim() === '' || isNaN(startTemp));
+while(startTemp.trim() === '' || isNaN(startTemp) || startTemp <= 0);
 
 let endTemp;
 
