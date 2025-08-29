@@ -11,8 +11,9 @@ do{
     console.log("Please enter a valid number greater than 0");
   }
   milesDriven = await rl.question('How many miles did you drive?');
+  parseFloat(milesDriven);
   err1 = true;
-}while(milesDriven.trim() === '' || isNaN(milesDriven) || milesDriven <= 0);
+}while(milesDriven === '' || isNaN(milesDriven) || milesDriven <= 0);
 
 
 let gallonsUsed;
@@ -23,8 +24,9 @@ do{
     console.log("Please enter a valid number greater than 0");
   }
 gallonsUsed = await rl.question('How many gallons of gas were used?');
+parseFloat(gallonsUsed);
 err2 = true;
-}while(gallonsUsed.trim() === '' || isNaN(gallonsUsed) || gallonsUsed <= 0);
+}while(gallonsUsed === '' || isNaN(gallonsUsed) || gallonsUsed <= 0);
 
 const mpg = milesDriven / gallonsUsed;
 console.log(`You had a Miles per Gallon of: ${mpg.toFixed(2)}`);
