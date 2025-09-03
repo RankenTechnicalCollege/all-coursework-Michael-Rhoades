@@ -35,6 +35,10 @@ router.post("/register", (req, res) => {
   }
   else {
     newUser.userId = users.length + 1;
+    if (newUser == undefined) {
+      res.status(400).send('User data is required');
+      return;
+    }
     if (!newUser.email) {
       res.status(400).send('Email is required');
       return;
@@ -62,6 +66,10 @@ router.post("/register", (req, res) => {
 
 router.post("/login", (req, res) => {
   const user = req.body;
+  if (user == undefined) {
+    res.status(400).send('User data is required');
+    return;
+  }
   if (!user.email) {
     res.status(400).send('Email is required');
     return;
