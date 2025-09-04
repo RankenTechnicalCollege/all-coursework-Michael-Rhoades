@@ -24,7 +24,7 @@ do{
   startTemp = parseFloat(startTemp);
   err2 = true;
 }
-while(startTemp.trim() === '' || isNaN(startTemp) || startTemp <= 0);
+while(startTemp === '' || isNaN(startTemp) || startTemp <= 0);
 
 let endTemp;
 
