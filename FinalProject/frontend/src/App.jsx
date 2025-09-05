@@ -5,44 +5,41 @@ function App() {
 
   return (
     <>
-      <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-5">
+      <header class="mb-5">
+        <nav class="navbar navbar-expand bg-body-tertiary">
           <div class="container-fluid">
             <a class="navbar-brand" href="#">My Issue Tracker</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <div id="navbarSupportedContent">
               <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                  <a class="nav-link" href="#">Users</a>
+                  <a class="nav-link" href="api/user/list">Users</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link" href="#">Bugs</a>
+                  <a class="nav-link" href="api/bug/list">Bugs</a>
                 </li>
               </ul>
             </div>
           </div>
         </nav>
       </header>
-      <main>
+      <main class="my-5">
         <div class="container">
           <div class="row">
-            <div class="col-5 border border-2">
-              <h1 class="text-center">Users</h1>
+            <div class="col-12 col-sm-5 border border-2 my-3">
+              <h1 class="text-center"><a href="api/user/list">Users</a></h1>
               <ul>
-                <li><a href='#'>Michael Rhoades</a></li>
-                <li><a href='#'>Firstname Lastname</a></li>
-                <li><a href='#'>Real Human</a></li>
+                <li><a href='api/user/1'>Michael Rhoades</a></li>
+                <li><a href='api/user/2'>Firstname Lastname</a></li>
+                <li><a href='api/user/3'>Real Human</a></li>
               </ul>
             </div>
-            <div class="col-2"></div>
-            <div class="col-5 border border-2">
-              <h1 class="text-center">Bugs</h1>
+            <div class="col-md-2"></div>
+            <div class="col-12 col-sm-5 border border-2 my-3">
+              <h1 class="text-center"><a href="api/bug/list">Bugs</a></h1>
               <ul>
-                <li><a href='#'>Crash on Startup</a></li>
-                <li><a href='#'>Logic Error</a></li>
-                <li><a href='#'>Not Loading</a></li>
+                <li><a href='api/bug/1'>Crash on Startup</a></li>
+                <li><a href='api/bug/2'>Logic Error</a></li>
+                <li><a href='api/bug/3'>Not Loading</a></li>
               </ul>
             </div>
           </div>
