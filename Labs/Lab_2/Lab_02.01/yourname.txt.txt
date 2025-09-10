@@ -6,11 +6,11 @@
 1.6: db.movies.find({$and:[{released:{$gte:ISODate("2010-01-01T00:00:00.000Z")}},{released:{$lt:ISODate("2011-01-01T00:00:00.000Z")}}]}).sort({released:1})
 1.7: db.theaters.find({"location.geo":{$near:{$geometry:{type:"Point", coordinates:[-90.24430509059555, 38.661953952079145]}, $maxDistance:160934, $minDistance:0}}})
 1.8: db.comments.find({movie_id:ObjectId("573a1398f29313caabceace9")}).sort({date:-1}).limit(10)
-1.9: db.comments.aggregate([{$match:{}},{$group:{_id:"$name",count:{$sum:1}}},$sort:{count:-1}},$limit:10}])
+1.9: db.comments.aggregate([{$match:{}},{$group:{_id:"$name", count:{$sum:1}}},{$sort:{count:-1}},{$limit:10}])
 1.10: db.movies.find().sort({"tomatoes.viewer.rating":-1}).limit(10)
 
 2.1: db.users.insertOne({name:"Michael Rhoades",email:"michaeltrhoades42@gmail.com",password:"nzhveuisbhukfnzkjdbvkjbzvbsjdkbv"})
-2.2: db.movies.insertOne({plot:"The hero does a backflip, snaps the bad guy's neck, and saves the day.",cast:["Ryan George Clone #16","Ryan George Clone #57"],title:"Hero Person 2",directors:["Ryan George Clone #3"],year:2019,imdb:{rating:9.5,votes:2000,id:239488},countries:["USA","Canada"],type:"movie",tomatoes:{viewer:{rating:4.7,numReviews:1500,meter:90},fresh:9,critic:{rating:10,numReviews:3,meter:100},rotten:0}})
+2.2: db.movies.insertOne({plot:"The hero does a backflip, snaps the bad guy's neck, and saves the day.",cast:["Ryan George Clone #16","Ryan George clone #57"],title:"Hero Person 2",directors:["Ryan George Clone #3"],year:2019,imdb:{rating:9.5,votes:2000,id:239488},countries:["USA","Canada"],type:"movie",tomatoes:{viewer:{rating:4.7,numReviews:1500,meter:90},fresh:9,critic:{rating:10,numReviews:3,meter:100},rotten:0}})
 2.3: db.theaters.insertOne({theaterId:9325798,location:{address:{street1:"4431 Finney Ave",city:"St. Louis",state:"MO",zipcode:"63113"},geo:{type:"Point",coordinates:[-90.24855466117348, 38.653304239792654]}}})
 2.4: db.comments.insertOne({name:"Michael Rhoades",email:"michaeltrhoades42@gmail.com",movie_id:ObjectId("68c07da6f8d1d43e3e64c8b2"),text:"I love watching this movie while eating a Sandwich with a Pretty Big Pickle in it."})
 2.5: db.movies.updateOne({title:"Hero Person 2"},{$set:{imdb:{rating:10,votes:4000,id:999999},tomatoes:{viewer:{rating:5,numReviews:3000,meter:100},fresh:10,critic:{rating:5,numReviews:10,meter:101},rotten:-1}}})

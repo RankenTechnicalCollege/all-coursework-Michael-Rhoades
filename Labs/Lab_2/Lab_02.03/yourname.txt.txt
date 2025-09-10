@@ -1,0 +1,31 @@
+1. db.movies.insertOne({title:"The Super Mario Bros. Movie", year:2023,genres:["animation"],directors:["Aaron Horvath", "Michael Jelenic"],cast:["Jack Black", "Anya Taylor-Joy", "Chris Pratt", "Charlie Day"]})
+2. db.movies.find().sort({title:1}).limit(5)
+3. db.movies.updateOne({title:"The Lion King"}, {$set:{title:"The Lion King (1994)"}})
+4. db.movies.deleteOne({title:"The Lion King (1994)"})
+5. db.users.insertOne({name:"John Doe",email:"johndoe@example.com",password:"123456"})
+6. db.users.find({},{name:1,email:1}).sort({name:1})
+7. db.users.updateOne({email:"johndoe@example.com"},{$set:{name:"John Smith"}})
+8. db.users.updateOne({email:"johndoe@example.com"},{$set:{password:"newpassword"}})
+9. db.users.deleteOne({email:"johndoe@example.com"})
+10. db.comments.insertOne({movie_id:ObjectId('573a1398f29313caabceace9'),name:"Ned Stark",text:"Great movie! Highly recommend it."})
+11. 
+12. 
+13. 
+14. 
+15. 
+16. 
+17. 
+18. 
+19. 
+20. 
+21. 
+22. 
+23. 
+24. 
+25. 
+26. 
+27. 
+28. 
+29. 
+30. 
+31. 
