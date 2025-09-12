@@ -1,0 +1,19 @@
+{
+  "name": "awd1111-exam-1",
+  "version": "1.0.0",
+  "description": "Hands On Test 1 for AWD 1111",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "start-dev": "nodemon -r dotenv/config server.js"
+  },
+  "author": "Michael Rhoades",
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^4.4.1",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0"
+  }
+}

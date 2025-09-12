@@ -8,24 +8,25 @@
 8. db.users.updateOne({email:"johndoe@example.com"},{$set:{password:"newpassword"}})
 9. db.users.deleteOne({email:"johndoe@example.com"})
 10. db.comments.insertOne({movie_id:ObjectId('573a1398f29313caabceace9'),name:"Ned Stark",text:"Great movie! Highly recommend it."})
-11. 
-12. 
-13. 
-14. 
-15. 
-16. 
-17. 
-18. 
-19. 
-20. 
-21. 
-22. 
-23. 
-24. 
-25. 
+11. db.comments.aggregate([{$lookup:{from:"movies",localField:"movie_id",foreignField:"_id",as:"movie"}},{$project:{_id:1,text:1,"movie.title":1}}])
+12. db.comments.updateOne({_id:ObjectId('68c1dd8e5e7f5c4ca8a8632f')},{$set:{text:"This movie is a masterpiece!"}})
+13. db.comments.deleteOne({_id:ObjectId('68c1dd8e5e7f5c4ca8a8632f')})
+14. db.movies.aggregate([{$unwind:"$genres"},{$match:{genres:"Comedy"}}])
+15. db.movies.updateOne({_id:ObjectId('573a1390f29313caabcd42e8')},{$push:{genres:"Drama"}})
+16. db.movies.deleteMany({year:{$lt:2000}})
+17. db.movies.find({$and:[{released:{$gte:ISODate("2010-01-01T00:00:00.000Z")}},{released:{$lt:ISODate("2020-01-01T00:00:00.000Z")}},{"imdb.rating":{$gte:0}}]}).sort({"imdb.rating":-1})
+18. db.movies.updateMany({$and:[{released:{$gte:ISODate("2015-01-01T00:00:00.000Z")}},{released:{$lt:ISODate("2016-01-01T00:00:00.000Z")}}]},{$set:{year:2016}})
+19. db.movies.deleteMany({directors:"Christopher Nolan"})
+20. db.users.insertOne({email:"admin@example.com"})
+21. db.users.find({email:{$regex:/admin/}})
+22. db.comments.deleteMany({email:"johndoe@example.com"})
+23. db.movies.createIndex({title:1})
+24. db.movies.find({title:{$regex:/^A/}}).projection({title:1,_id:0})
+25. db.movies.updateMany({genres:"Action"},{$set:{genres:["Adventure"]}})
 26. 
 27. 
 28. 
-29. 
+29-1. 
+29-2. 
 30. 
 31. 
