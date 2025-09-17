@@ -23,10 +23,12 @@
 23. db.movies.createIndex({title:1})
 24. db.movies.find({title:{$regex:/^A/}}).projection({title:1,_id:0})
 25. db.movies.updateMany({genres:"Action"},{$set:{genres:["Adventure"]}})
-26. 
-27. 
-28. 
-29-1. 
-29-2. 
-30. 
-31. 
+26.1. //created a user named "Evan"
+26.2. db.users.updateOne({name:'Evan'},{$set:{lastLogin: new Date('December 17, 1995')}})
+26.3. db.users.deleteMany({lastLogin:{$lt:ISODate("2025-03-17")}})
+27. db.movies.aggregate([{$group:{_id:"movies",avg:{$avg:"$imdb.rating"}}},{$project:{_id:0}}])
+28. db.movies.updateOne({_id:ObjectId('573a1393f29313caabcdcb42')},{$set:{"imdb.rating":4.5}})
+29-1. db.comments.insertOne({text:"words spoiler words"})
+29-2. db.comments.deleteMany({text:{$regex:/spoiler/}})
+30. db.movies.aggregate([{$unwind:"$genres"},{$group:{_id:"$genres",count:{$sum:1}}},{$sort:{count:-1}}])
+31. db.movies.updateMany({},[{$set:{title:{$toUpper:"$title"}}}])

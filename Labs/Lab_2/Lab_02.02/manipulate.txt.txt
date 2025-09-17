@@ -1,0 +1,8 @@
+1. db.users.insertOne({email:"ih8mondays@gmail.com",password:"lasagna",fullName:"Garfield Arbuckle",givenName:"Garfield",familyName:"Arbuckle",role:"Quality Analyst",createdBugs:[""],assignedBugs:[""]})
+2. db.bugs.insertOne({title:"minBug",description:"to test with the minimum data again",stepsToReproduce:"",author:ObjectId('68c871898f7b2252bc00318c'),createdOn:ISODate("2025-09-16T19:35:00.000Z"),classification:"Unclassified"})
+3. db.users.updateOne({role:"Quality Analyst"},{$push:{assignedBugs:[ObjectId('68c9ae018f7b2252bc003191')]}})
+4. db.bugs.updateOne({_id:ObjectId('68c9ae018f7b2252bc003191')},{$set:{comments:[{author:ObjectId('68c9ad6c8f7b2252bc003190'),date:ISODate("2025-09-16T19:47:00.000Z"),text:"Not enough food."}]}})
+5. db.bugs.updateOne({_id:ObjectId('68c9ae018f7b2252bc003191')},{$set:{testCases:["example"]}})
+6. db.bugs.updateOne({_id:ObjectId('68c9ae018f7b2252bc003191')},{$set:{workHoursLogged:[4]}})
+7. db.bugs.updateOne({_id:ObjectId('68c9ae018f7b2252bc003191')},{$set:{fixInVersion:"1.1.2",fixedOnDate:ISODate("2025-09-16T19:55:00.000Z")}})
+8. db.bugs.updateOne({_id:ObjectId('68c9ae018f7b2252bc003191')},{$set:{closed:true}})

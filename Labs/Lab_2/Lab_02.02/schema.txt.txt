@@ -1,0 +1,15 @@
+Users:
+	db.users.insertOne({email:"michaeltrhoades42@gmail.com",password:"tempPassword",fullName:"Michael Rhoades",givenName:"Michael",familyName:"Rhoades",role:"Creator",createdBugs:[""],assignedBugs:[""]})
+	db.users.insertOne({email:"16thpres@gmail.com",password:"housedivided",fullName:"Abraham Lincoln",givenName:"Abraham",familyName:"Lincoln",role:"Business Analyst",createdBugs:[""],assignedBugs:[""]})
+
+	db.users.updateOne({givenName:"Michael"},{$set:{createdBugs:[ObjectId('68c8764e8f7b2252bc00318d')],assignedBugs:[ObjectId('68c87d3a8f7b2252bc00318f')]}})
+	db.users.updateOne({givenName:"Abraham"},{$set:{createdBugs:[ObjectId('68c87d3a8f7b2252bc00318f')]}})
+
+
+
+Bugs:
+	db.bugs.insertOne({title:"firstBug",description:"test data for the bug tracking",stepsToReproduce:["Step 1","Step 2","Step 3"],authorOfBug:ObjectId('68c871898f7b2252bc00318c'),createdOn:ISODate("2025-09-15T21:15:00.000Z"),lastUpdated:ISODate("2025-09-15T21:15:00.000Z"),edits:[{user:ObjectId('68c871898f7b2252bc00318c'),date:ISODate("2025-09-15T21:15:00.000Z"),operation:"Created"}],comments:[{author:ObjectId('68c871898f7b2252bc00318c'),date:ISODate("2025-09-15T21:15:00.000Z"),text:"Created the bug"}],classification:"Unclassified",testCases:["first","second","third"],workHoursLogged:[0],fixInVersion:"n/a",fixedOnDate:null,closed:false})
+	db.bugs.insertOne({title:"minimalTest",description:"to test with the minimum data",stepsToReproduce:"qwerty",author:ObjectId('68c87adb8f7b2252bc00318e'),createdOn:ISODate("2025-09-15T21:55:00.000Z"),classification:"Unclassified"})
+
+	db.bugs.updateOne({title:"firstBug"},{$set:{classification:"approved"}})
+	db.bugs.updateOne({title:"minimalTest"},{$set:{classification:"unclassified"}})
