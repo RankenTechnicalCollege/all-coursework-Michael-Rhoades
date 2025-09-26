@@ -4,152 +4,185 @@ const router = express.Router();
 import debug from 'debug';  
 const debugBug = debug('app:BugRouter');
 
+import { GetAllBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById } from "../../database.js";
+
 router.use(express.urlencoded({ extended: false }));
 
-const bugs = [
-  { bugId: 1, title: 'Bug 1', description: 'Description of Bug 1', stepsToReproduce: 'Step 1, Step 2, Step 3', classification: 'UI', classifiedOn: null, lastUpdated: new Date(Date.now()), assignedToUserId: null, assignedToUserName: null, assignedOn: null, closed: false, closedOn: null},
-  { bugId: 2, title: 'Bug 2', description: 'Description of Bug 2', stepsToReproduce: 'Step 1, Step 2, Step 3', classification: 'UI', classifiedOn: null, lastUpdated: new Date(Date.now()), assignedToUserId: null, assignedToUserName: null, assignedOn: null, closed: false, closedOn: null},
-  { bugId: 3, title: 'Bug 3', description: 'Description of Bug 3', stepsToReproduce: 'Step 1, Step 2, Step 3', classification: 'UI', classifiedOn: null, lastUpdated: new Date(Date.now()), assignedToUserId: null, assignedToUserName: null, assignedOn: null, closed: false, closedOn: null}
-];
-
-router.get('/list', (req, res) => {//Get all bugs
-  debugBug('bug list route hit');
-  res.json(bugs);
-});
-
-router.get('/:bugId', (req, res) => {//Get bug by id
-  const id = req.params.bugId;
-  const bug = bugs.find(bug => bug.bugId == id);
-  if (bug) {
-    res.status(200).json(bug);
-  } else {
-    res.status(404).send('Bug not found');
-  }
-});
-
-router.post('/new', (req, res) => {//Create new bug
-  const newBug = req.body;
-
-  const searchBug = bugs.find(bug => bug.title == newBug.title);
-  if (searchBug) {
-    res.status(404).send('Bug already exists');
-    return;
-  }
-  else {
-    newBug.bugId = bugs.length + 1;
-    if (newBug == undefined) {
-      res.status(404).send('Bug data is required');
+router.get('', async (req, res) => {//Get all bugs
+  try {
+    const bugs = await GetAllBugs();
+    if (!bugs) {
+      res.status(404).json({message: 'Bugs not found'});
       return;
-    }
-    if (!newBug.title) {
-      res.status(404).send('Title is required');
-      return;
-    }
-    if (!newBug.description) {
-      res.status(404).send('Description is required');
-      return;
-    }
-    if (!newBug.stepsToReproduce) {
-      res.status(404).send('Steps to Reproduce are required');
-      return;
-    }
-    newBug.lastUpdated = new Date(Date.now());
-    bugs.push(newBug);
-    res.status(200).json({message: `Bug ${newBug.title} added successfully.`});
-  }
-});
-
-router.put('/:bugId', (req, res) => {//Update bug details
-  const id = req.params.bugId;
-  const bugToUpdate = bugs.find(bug => bug.bugId == id);
-
-  const updatedBug = req.body;
-
-  if (bugToUpdate) {
-    for (const key in updatedBug) {
-      bugToUpdate[key] = updatedBug[key];
-    }
-    const index = bugs.findIndex(bug => bug.bugId == id);
-    if (index !== -1) {
-      bugs[index] = bugToUpdate;
     }
     else {
-      res.status(404).send('Bug not found');
+      res.status(200).json(bugs);
+    }
+  }
+  catch {
+    res.status(500).json({message: 'Error getting bugs'});
+  }
+});
+
+router.get('/:bugId', async (req, res) => {//Get bug by id
+  try {
+    const id = req.params.bugId;
+    const bug = await GetBugById(id);
+    if (!bug) {
+      res.status(404).json({message: 'Bug not found'});
       return;
     }
-    bugToUpdate.lastUpdated = new Date(Date.now());
-    res.status(200).json({message: `Bug ${id} updated successfully.`});
+    else {
+      res.status(200).json(bug);
+    }
   }
-  else {
-    res.status(404).send('Bug not found');
+  catch {
+    res.status(500).json({message: 'Error fetching bug'});
   }
 });
 
-router.put('/:bugId/classify', (req, res) => {//Classify bug
-  const bugIndex = bugs.findIndex(bug => bug.bugId == req.params.bugId);
-  if (bugIndex === -1) {
-    res.status(404).send('Bug not found');
-    return;
+router.post('', async (req, res) => {//Create new bug
+  try {
+    const bugToAdd = req.body;
+    debugBug(bugToAdd);
+    if (bugToAdd == undefined) {
+      res.status(400).send('Bug data is required');
+      return;
+    }
+    if (!bugToAdd.title || !bugToAdd.description || !bugToAdd.stepsToReproduce) {
+      res.status(400).send('Title, description, and steps to reproduce are required');
+      return;
+    }
+    const addedBug = await AddBug(bugToAdd.title, bugToAdd.description, bugToAdd.stepsToReproduce);
+    debugBug(addedBug);
+    if (addedBug.insertedId) {
+      res.status(201).json({message: `Bug ${bugToAdd.title} added successfully.`});
+    } else {
+      res.status(500).json({message: 'Error adding bug'});
+    }
   }
-  const classifiedBug = req.body;                                         
-  debugBug(JSON.stringify(classifiedBug));                                //
-  if (classifiedBug == undefined || !classifiedBug.classification) {      //
-    res.status(404).send('Classification is required');                   // works now
-    return;                                                               //
-  }                                                                       //
-  bugs[bugIndex] = { ...bugs[bugIndex], classifiedBug };
-  bugs[bugIndex].classifiedOn = new Date(Date.now());
-  bugs[bugIndex].lastUpdated = new Date(Date.now());
-  res.status(200).json({message: `Bug ${req.params.bugId} classified successfully.`});
+  catch {
+    res.status(500).json({message: 'Error adding bug'});
+  }
 });
 
-router.put('/:bugId/assign', (req, res) => {//Assign bug to user
-  const bugIndex = bugs.findIndex(bug => bug.bugId == req.params.bugId);
-  if (bugIndex === -1) {
-    res.status(404).send('Bug not found');
-    return;
+router.patch('/:bugId', async (req, res) => {//Update bug details
+  try {
+    const id = req.params.bugId;
+    const bugToUpdate = req.body;
+    const oldBug = await GetBugById(id);
+    let title = null;
+    let description = null;
+    let stepsToReproduce = null;
+    if (bugToUpdate == undefined) {
+      res.status(400).send('Bug data is required');
+      return;
+    }
+    if (!oldBug) {
+      res.status(404).send('Bug not found');
+    }
+    if (!bugToUpdate.title) {
+      title = oldBug.title;
+    }
+    else {
+      title = bugToUpdate.title;
+    }
+    if (!bugToUpdate.description) {
+      description = oldBug.description;
+    }
+    else {
+      description = bugToUpdate.description;
+    }
+    if (!bugToUpdate.stepsToReproduce) {
+      description = oldBug.stepsToReproduce;
+    }
+    else {
+      description = bugToUpdate.stepsToReproduce;
+    }
+
+    const updatedBug = await UpdateBug(id,title,description,stepsToReproduce)
+    debugBug(updatedBug)
+    if (updatedBug.modifiedCount == 0) {
+      res.status(404).json({message: 'Bug not found'});
+      return;
+    }
+    else {
+      res.status(200).json({message: `Bug ${id} updated successfully.`});
+    }
   }
-  const assignedBug = req.body;
-  debugBug(JSON.stringify(assignedBug));
-  if (assignedBug == undefined) {
-    res.status(404).send('User ID and Name are required');
-    return;
+  catch {
+    res.status(500).json({message: 'Error updating bug'});
   }
-  if (!assignedBug.assignedToUserId) {
-    res.status(404).send('User ID is required');
-    return;
-  }
-  if (!assignedBug.assignedToUserName) {
-    res.status(404).send('User Name is required');
-    return;
-  }
-  bugs[bugIndex].assignedToUserId = assignedBug.assignedToUserId;
-  bugs[bugIndex].assignedToUserName = assignedBug.assignedToUserName;
-  bugs[bugIndex].assignedOn = new Date(Date.now());
-  bugs[bugIndex].lastUpdated = new Date(Date.now());
-  res.status(200).json({message: `Bug ${req.params.bugId} assigned successfully.`});
 });
 
-router.put('/:bugId/close', (req, res) => {//Close bug
-  const bugIndex = bugs.findIndex(bug => bug.bugId == req.params.bugId);
-  if (bugIndex === -1) {
-    res.status(404).send('Bug not found');
-    return;
+router.patch('/:bugId/classify', async (req, res) => {//Classify bug
+  try {
+    const id = req.params.bugId;
+    const bugToUpdate = req.body;
+    if (bugToUpdate == undefined || !bugToUpdate.classification) {
+      res.status(404).json({message: 'Classification needed'});
+      return;
+    }
+    const classifiedBug = await ClassifyBug(id,bugToUpdate.classification);
+    if (classifiedBug.modifiedCount == 0) {
+      res.status(404).json({message: 'Bug not found'})
+    }
+    else {
+      res.status(200).json({message: `Bug ${id} classified successfully`})
+    }
   }
-  const closedBug = req.body;
-  debugBug(JSON.stringify(closedBug));
-  if (closedBug == undefined) {
-    res.status(404).send('Confirmation of closing the bug is required');
-    return;
+  catch {
+    res.status(500).json({message: 'Error classifying bug'})
   }
-  if (closedBug.closed != 'true') {
-    res.status(404).send("Set closed to 'true' to close the bug");
-    return;
+});
+
+router.patch('/:bugId/assign', async (req, res) => {//Assign bug to user
+  try {
+    const id = req.params.bugId;
+    const bugToAssign = req.body;
+    if (bugToAssign == undefined || !bugToAssign.assignedToUserId) {
+      res.status(400).json({message: 'assignToUserId required'});
+      return;
+    }
+    const userToAssign = await GetUserById(bugToAssign.assignedToUserId)
+    if (userToAssign == undefined) {
+      res.status(404).json({message: 'User not found'});
+      return;
+    }
+    const assignedBug = await AssignBug(id,bugToAssign.assignedToUserId,userToAssign.fullName);
+    if (assignedBug.modifiedCount == 0) {
+      res.status(404).json({message: 'Bug not found'})
+      return;
+    }
+    else {
+      res.status(200).json({message: `${userToAssign.fullName} assigned to bug ${id}`})
+    }
   }
-  bugs[bugIndex].closed = 'true';
-  bugs[bugIndex].closedOn = new Date(Date.now());
-  bugs[bugIndex].lastUpdated = new Date(Date.now());
-  res.status(200).json({message: `Bug ${req.params.bugId} closed successfully.`});
+  catch {
+    res.status(500).json({message: 'Error assigning bug'})
+  }
+});
+
+router.patch('/:bugId/close', async (req, res) => {//Close bug
+  try {
+    const id = req.params.bugId;
+    const bugToClose = req.body;
+    if (bugToClose == undefined || bugToClose.closed != "true") {
+      res.status(400).json({message: 'closed must be true'});
+      return;
+    }
+    const closedBug = await CloseBug(id);
+    if (closedBug.modifiedCount == 0) {
+      res.status(404).json({message: 'Bug not found'});
+      return;
+    }
+    else {
+      res.status(200).json({message: `Bug ${id} closed.`});
+    }
+  }
+  catch {
+    res.status(500).json({message: 'Error closing bug'});
+  }
 });
 
 export {router as bugRouter};
