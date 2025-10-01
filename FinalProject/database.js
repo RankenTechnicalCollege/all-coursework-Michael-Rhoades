@@ -75,9 +75,9 @@ async function GetBugById(id) {
   return await db.collection("bugs").findOne({_id: new ObjectId(id)});
 }
 
-async function AddBug(title, description, stepsToReproduce) {
+async function AddBug(bug) {
   const db = await connectToDatabase();
-  return await db.collection("bugs").insertOne({title: title, description: description, stepsToReproduce: stepsToReproduce, createdOn: new Date(Date.now()), lastUpdated: new Date(Date.now()), authorOfBug: null, edits:[], comments:[], classification: "unclassified", classifiedOn: null, assignedToUserId: null, assignedToUserName: null, assignedOn: null, testCases:[],workHoursLogged:[], fixInVersion: null, fixedOnDate: null, closed: false, closedOn: null});
+  return await db.collection("bugs").insertOne(bug);
 }
 
 async function UpdateBug(id, title, description, stepsToReproduce) {

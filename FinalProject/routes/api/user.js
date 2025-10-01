@@ -9,8 +9,10 @@ import { GetAllUsers, GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, D
 
 import bcrypt from 'bcrypt';
 
+import { validate, validId } from '../../Middleware/validator.js';
+import { schemaRegister, schemaLogin, schemaUpdateUser } from '../../Validation/schemaUsers.js';
+
 router.get("", async (req, res) => {
-  
   try {
     const users = await GetAllUsers();
     if (!users) {
@@ -26,166 +28,69 @@ router.get("", async (req, res) => {
   }
 });
 
-router.get("/:userId", async (req, res) => {
-  
-  try {
-    const id = req.params.userId;
-    const user = await GetUserById(id);
-    if (!user) {
-      res.status(404).json({message: 'User not found'});
-      return;
-    }
-    else {
-      res.status(200).json(user);
-    }
+router.get("/:userId", validId('userId'), async (req, res) => {
+  const user = await GetUserById(req.params.userId);
+  if (!user) {
+    res.status(404).json({message: 'User not found'});
+    return;
   }
-  catch {
-    res.status(500).json({message: 'Error getting user'})
+  res.status(200).json(user);
+});
+
+router.post("", validate(schemaRegister), async (req, res) => {
+  const newUser = req.body;
+  const exists = await GetUserByEmail(newUser.email);
+  debugUser(exists);
+  if (exists != null) {
+    res.status(400).json({message: 'Email already in use'});
+    return;
+  }
+  const addedUser = await AddUser(newUser);
+  res.status(201).json({message: `User ${newUser.givenName} added successfully.`});
+});
+
+router.post("/login", validate(schemaLogin), async (req, res) => {
+  const user = req.body;
+  const existingUser = await GetUserByEmail(user.email);
+  if (await bcrypt.compare(user.password, existingUser.password)) {
+    res.status(200).json({message: `User ${existingUser.givenName} logged in successfully.`});
+  }
+  else {
+    res.status(400).json({message: 'Invalid email or password'});
+    return;
   }
 });
 
-router.post("", async (req, res) => {
-  try {
-    const newUser = req.body;
-    debugUser(newUser);
-    if (newUser == undefined) {
-      res.status(400).send('User data is required');
-      return;
-    }
-
-    if (!newUser.email || !newUser.password || !newUser.fullName || !newUser.givenName || !newUser.familyName || !newUser.role) {
-      res.status(400).send('All fields are required');
-      return;
-    }
-    newUser.createdBugs = [];
-    newUser.assignedBugs = [];
-    newUser.password = await bcrypt.hash(newUser.password, 10);
-
-    const exists = await GetUserByEmail(newUser.email);
-    debugUser(exists);
-    if (exists != null) {
-      res.status(400).json({message: 'Email already in use'});
-      return;
-    }
-
-    const addedUser = await AddUser(newUser);
-    debugUser(addedUser);
-    if (addedUser.insertedId) {
-      res.status(201).json({message: `User ${newUser.givenName} added successfully.`});
-    } else {
-      res.status(500).json({message: 'Error adding user'});
-    }
+router.patch("/:userId", validId('userId'), validate(schemaUpdateUser), async (req, res) => {
+  const id = req.params.userId;
+  const userToUpdate = req.body;
+  const oldUser = await GetUserById(id);
+  if (!oldUser) {
+    res.status(404).json({message: 'User not found'});
+    return;
   }
-  catch {
-    res.status(500).json({message: 'Error adding user'});
+  const password = userToUpdate.password ? userToUpdate.password : oldUser.password;
+  const fullName = userToUpdate.fullName ? userToUpdate.fullName : oldUser.fullName;
+  const givenName = userToUpdate.givenName ? userToUpdate.givenName : oldUser.givenName;
+  const familyName = userToUpdate.familyName ? userToUpdate.familyName : oldUser.familyName;
+  const role = userToUpdate.role ? userToUpdate.role : oldUser.role;
+
+  const updatedUser = await UpdateUser(id,password,fullName,givenName,familyName,role);
+  if (updatedUser.modifiedCount === 0) {
+    res.status(404).json({message: 'User not found'});
+    return;
   }
+  res.status(200).json({message: `User ${id} updated successfully.`});
 });
 
-router.post("/login", async (req, res) => {
-  try {
-    const user = req.body;
-    if (user == undefined) {
-      res.status(400).send('User data is required');
-      return;
-    }
-    if (!user.email || !user.password) {
-      res.status(400).send('Email and password are required');
-      return;
-    }
-    const existingUser = await GetUserByEmail(user.email);
-    if (existingUser == null) {
-      res.status(400).json({message: 'Invalid email or password'});
-      return;
-    }
-    if (await bcrypt.compare(user.password, existingUser.password)) {
-      res.status(200).json({message: `User ${existingUser.givenName} logged in successfully.`});
-    }
-    else {
-      res.status(400).json({message: 'Invalid email or password'});
-      return;
-    }
+router.delete("/:userId", validId('userId'), async (req, res) => {
+  const id = req.params.userId;
+  const deletedUser = await DeleteUser(id);
+  if (deletedUser.deletedCount === 0) {
+    res.status(404).json({message: 'User not found'});
+    return;
   }
-  catch {
-    res.status(500).send('Error logging in');
-  }
-});
-
-router.patch("/:userId", async (req, res) => {
-  try {
-    const id = req.params.userId;
-    const userToUpdate = req.body;
-    const oldUser = await GetUserById(id);
-    let password = null;
-    let fullName = null;
-    let givenName = null;
-    let familyName = null;
-    let role = null;
-    if (!oldUser) {
-      res.status(404).send('User not found');
-      return;
-    }
-    if (userToUpdate == undefined) {
-      res.status(400).send('User data is required');
-      return;
-    }
-    if (!userToUpdate.password) {
-      password = oldUser.password;
-    }
-    else {
-      password = userToUpdate.password;
-      password = await bcrypt.hash(userToUpdate.password, 10);
-    }
-    if (!userToUpdate.fullName) {
-      fullName = oldUser.fullName;
-    }
-    else {
-      fullName = userToUpdate.fullName;
-    }
-    if (!userToUpdate.givenName) {
-      givenName = oldUser.givenName;
-    }
-    else {
-      givenName = userToUpdate.givenName;
-    }
-    if (!userToUpdate.familyName) {
-      familyName = oldUser.familyName;
-    }
-    else {
-      familyName = userToUpdate.familyName;
-    }
-    if (!userToUpdate.role) {
-      role = oldUser.role;
-    }
-    else {
-      role = userToUpdate.role;
-    }
-    const updatedUser = await UpdateUser(id, password, fullName, givenName, familyName, role);
-    debugUser(updatedUser);
-    if (updatedUser.modifiedCount === 1) {
-      res.status(200).json({message: `User ${id} updated successfully.`});
-    } else {
-      res.status(404).json({message: 'User not found'});
-    }
-  }
-  catch {
-    res.status(500).json({message: 'Error updating user'});
-  }
-});
-
-router.delete("/:userId", async (req, res) => {
-  try {
-    const id = req.params.userId;
-    const deletedUser = await DeleteUser(id);
-    debugUser(deletedUser);
-    if (deletedUser.deletedCount === 1) {
-      res.status(200).json({message: `User ${id} deleted successfully.`});
-    } else {
-      res.status(404).send('User not found');
-    }
-  }
-  catch {
-    res.status(500).send('Error deleting user');
-  }
+  res.status(200).json({message: `User ${id} deleted successfully.`});
 });
 
 export { router as userRouter };

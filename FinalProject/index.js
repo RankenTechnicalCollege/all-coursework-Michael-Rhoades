@@ -3,14 +3,17 @@ import dotenv from 'dotenv';
 dotenv.config();
 import debug from 'debug';
 const debugServer = debug('app:Server');
+import cors from 'cors';
+
 import { userRouter } from './routes/api/user.js';
 import { bugRouter } from './routes/api/bug.js';
+
 
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
+app.use(cors());
 app.use(express.static('frontend/dist'));
 app.use('/api/users', userRouter);
 app.use('/api/bugs', bugRouter);
