@@ -39,6 +39,8 @@ router.get("/:userId", validId('userId'), async (req, res) => {
 
 router.post("", validate(schemaRegister), async (req, res) => {
   const newUser = req.body;
+  newUser.createdBugs = [];
+  newUser.assignedBugs = [];
   const exists = await GetUserByEmail(newUser.email);
   debugUser(exists);
   if (exists != null) {
