@@ -39,6 +39,7 @@ router.get("/:userId", validId('userId'), async (req, res) => {
 
 router.post("", validate(schemaRegister), async (req, res) => {
   const newUser = req.body;
+  newUser.password = await bcrypt.hash(newUser.password, 10);
   newUser.createdBugs = [];
   newUser.assignedBugs = [];
   const exists = await GetUserByEmail(newUser.email);
@@ -71,7 +72,13 @@ router.patch("/:userId", validId('userId'), validate(schemaUpdateUser), async (r
     res.status(404).json({message: 'User not found'});
     return;
   }
-  const password = userToUpdate.password ? userToUpdate.password : oldUser.password;
+  let password;
+  if (userToUpdate.password) {
+    password = await bcrypt.hash(userToUpdate.password, 10);
+  }
+  else {
+    password = oldUser.password;
+  }
   const fullName = userToUpdate.fullName ? userToUpdate.fullName : oldUser.fullName;
   const givenName = userToUpdate.givenName ? userToUpdate.givenName : oldUser.givenName;
   const familyName = userToUpdate.familyName ? userToUpdate.familyName : oldUser.familyName;
