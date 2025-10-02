@@ -101,7 +101,76 @@ async function CloseBug(id) {
 }
 
 
+//Comments
+async function GetComments(bugId) {
+  const db = await connectToDatabase();
+  const bug = await db.collection("bugs").findOne({_id: new ObjectId(bugId)});
+  return bug.comments;
+}
+
+async function GetCommentById(bugId, commentId) {
+  const db = await connectToDatabase();
+  const bug = await db.collection("bugs").findOne({_id: new ObjectId(bugId)});
+  debugDb(bug);
+  if (!bug) {
+    return null;
+  }
+  const comment = bug.comments.find(c => c.id == commentId);
+  debugDb(comment);
+  return comment;
+}
+
+async function AddComment(bugId, comment) {
+  const db = await connectToDatabase();
+  return await db.collection("bugs").updateOne({_id: new ObjectId(bugId)},{$push: {comments: comment}, $set: {lastUpdated: new Date(Date.now())}});
+}
+
+
+
+// Test Cases
+async function GetTestCases(bugId) {
+  const db = await connectToDatabase();
+  const bug = await db.collection("bugs").findOne({_id: new ObjectId(bugId)});
+  return bug.testCases;
+}
+
+async function GetTestCaseById(bugId, testCaseId) {
+  const db = await connectToDatabase();
+  const bug = await db.collection("bugs").findOne({_id: new ObjectId(bugId)});
+  if (!bug) {
+    return null;
+  }
+  const testCase = bug.testCases.find(c => c.id == testCaseId);
+  return testCase;
+}
+
+async function AddTestCase(bugId, testCase) {
+  const db = await connectToDatabase();
+  return await db.collection("bugs").updateOne({_id: new ObjectId(bugId)},{$push: {testCases: testCase}, $set: {lastUpdated: new Date(Date.now())}});
+}
+
+async function UpdateTestCase(bugId, testCaseId, testCaseTitle, testCaseResult) {
+  const db = await connectToDatabase();
+  const bug = await db.collection("bugs").findOne({_id: new ObjectId(bugId)});
+  if (!bug) {
+    return null;
+  }
+  const testCaseIndex = bug.testCases.findIndex(c => c.id == testCaseId);
+  if (testCaseIndex === -1) {
+    return null;
+  }
+  bug.testCases[testCaseIndex].title = testCaseTitle;
+  bug.testCases[testCaseIndex].result = testCaseResult;
+  return await db.collection("bugs").updateOne({_id: new ObjectId(bugId)},{$set: {testCases: bug.testCases, lastUpdated: new Date(Date.now())}});
+}
+
+async function DeleteTestCase(bugId, testCaseId) {
+  const db = await connectToDatabase();
+  const x = await db.collection("bugs").updateOne({_id: new ObjectId(bugId)},{$pull: {testCases: {id: testCaseId}}, $set: {lastUpdated: new Date(Date.now())}});
+  debugDb(x);
+  return x;
+}
 
 //ping();
 
-export{GetAllUsers, GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetAllBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug};
+export{GetAllUsers, GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetAllBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase};

@@ -1,7 +1,6 @@
 import { ObjectId } from "mongodb";
 
 
-
 const validate = (schema) => (req, res, next) => {
   const options = {
     abortEarly: false,
@@ -41,5 +40,7 @@ const validId = (id) => {
     }
   }
 }
+
+
 
 export {validate, validId};
