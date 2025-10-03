@@ -72,7 +72,15 @@ router.post('', validate(schemaCreateBug), async (req, res) => {//Create new bug
 router.patch('/:bugId', validId('bugId'), validate(schemaUpdateBug), async (req, res) => {//Update bug details
   const id = req.params.bugId;
   const bugToUpdate = req.body;
-  const updatedBug = await UpdateBug(id,bugToUpdate.title,bugToUpdate.description,bugToUpdate.stepsToReproduce);
+  const oldBug = await GetBugById(id);
+  if (!oldBug) {
+    res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  const title = bugToUpdate.title ? bugToUpdate.title : oldBug.title;
+  const description = bugToUpdate.description ? bugToUpdate.description : oldBug.description;
+  const stepsToReproduce = bugToUpdate.stepsToReproduce ? bugToUpdate.stepsToReproduce : oldBug.stepsToReproduce;
+  const updatedBug = await UpdateBug(id,title,description,stepsToReproduce);
   if (updatedBug.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'});
     return;
@@ -110,6 +118,11 @@ router.patch('/:bugId/assign', validId('bugId'), validate(schemaAssignBug), asyn
 
 router.patch('/:bugId/close', validId('bugId'), validate(schemaCloseBug), async (req, res) => {//Close bug
   const id = req.params.bugId;
+  const bugToClose = req.body;
+  if (!bugToClose.closed) {
+    res.status(400).json({message: 'To close a bug, the "closed" field must be true'});
+    return;
+  }
   const closedBug = await CloseBug(id);
   if (closedBug.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'});
