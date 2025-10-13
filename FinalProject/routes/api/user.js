@@ -12,19 +12,47 @@ import bcrypt from 'bcrypt';
 import { validate, validId } from '../../Middleware/validator.js';
 import { schemaRegister, schemaLogin, schemaUpdateUser } from '../../Validation/schemaUsers.js';
 
-router.get("", async (req, res) => {
-  try {
-    const users = await GetAllUsers();
-    if (!users) {
-      res.status(404).json({message: 'Users not found'});
-      return;
-    }
-    else {
-      res.status(200).json(users);
-    }
+router.get("", validId('userId'), async (req, res) => {
+  const params = req.query;
+
+  const pageNumber = parseInt(params.pageNumber) || 1;
+  const pageSize = parseInt(params.pageSize) || 5;
+  const skip = (pageNumber - 1) * pageSize;
+
+  const filter = {};
+
+  if (params.keywords) filter.$text = {$search: params.keywords};
+  if (params.role) filter.role = params.role;
+
+  if (params.maxAge || params.minAge) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const dateFilter = {};
+
+    if (params.maxAge) dateFilter.$gte = new Date(today.getTime() - (params.maxAge * 86400000));
+    if (params.minAge) dateFilter.$lte = new Date(today.getTime() - (params.minAge * 86400000));
+
+    filter.joined = dateFilter;
   }
-  catch {
-    res.status(500).json({message: 'Error getting users'})
+
+  const sortOptions = {
+    givenName: {givenName: 1, familyName: 1, joined: 1},
+    familyName: {familyName: 1, givenName: 1, joined: 1},
+    role: {role: 1, givenName: 1, familyName: 1, joined: 1},
+    newest: {joined: -1},
+    oldest: {joined: 1}
+  }
+
+  const sortBy = sortOptions[params.sortBy] || sortOptions.givenName;
+
+  const users = await GetUsers(filter, pageSize, skip, sortBy);
+  if (!users) {
+    res.status(404).json({message: 'Users not found'});
+    return;
+  }
+  else {
+    res.status(200).json(users);
+    return;
   }
 });
 

@@ -22,19 +22,50 @@ function genId() {
 }
 
 
-router.get('', async (req, res) => {//Get all bugs
-  try {
-    const bugs = await GetAllBugs();
-    if (!bugs) {
-      res.status(404).json({message: 'Bugs not found'});
-      return;
-    }
-    else {
-      res.status(200).json(bugs);
-    }
+router.get('', async (req, res) => {
+  const params = req.query;
+
+  const pageNumber = parseInt(params.pageNumber) || 1;
+  const pageSize = parseInt(params.pageSize) || 5;
+  const skip = (pageNumber - 1) * pageSize;
+
+  const filter = {};
+
+  if (params.keywords) filter.$text = {$search: params.keywords};
+  if (params.classification) filter.classification = params.classification;
+  if (params.closed == "true") filter.closed = true;
+  if (params.closed == "false") filter.closed = false;
+
+  if (params.maxAge || params.minAge) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const dateFilter = {};
+
+    if (params.maxAge) dateFilter.$gte = new Date(today.getTime() - (params.maxAge * 86400000));
+    if (params.minAge) dateFilter.$lte = new Date(today.getTime() - (params.minAge * 86400000));
+
+    filter.createdOn = dateFilter;
   }
-  catch {
-    res.status(500).json({message: 'Error getting bugs'});
+
+  const sortOptions = {
+    newest: {createdOn: -1},
+    oldest: {createdOn: 1},
+    title: {title: 1, createdOn: -1},
+    classification: {classification: 1, createdOn: -1},
+    assignedTo: {assignedToUserName: 1, createdOn: -1},
+    createdBy: {authorOfBug: 1, createdOn: -1}
+  }
+
+  const sortBy = sortOptions[params.sortBy] || sortOptions.newest;
+
+  const bugs = await GetBugs(filter, pageSize, skip, sortBy);
+  if (!bugs) {
+    res.status(404).json({message: 'Bugs not found'});
+    return;
+  }
+  else {
+    res.status(200).json(bugs);
+    return;
   }
 });
 
