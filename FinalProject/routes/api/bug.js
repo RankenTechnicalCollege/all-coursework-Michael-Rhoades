@@ -4,7 +4,7 @@ const router = express.Router();
 import debug from 'debug';  
 const debugBug = debug('app:BugRouter');
 
-import { GetAllBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase } from "../../database.js";
+import { GetBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase } from "../../database.js";
 
 import { validate, validId } from '../../Middleware/validator.js';
 import { schemaCreateBug, schemaUpdateBug, schemaClassifyBug, schemaAssignBug, schemaCloseBug, schemaAddComment, schemaAddTestCase, schemaUpdateTestCase } from '../../Validation/schemaBugs.js';
@@ -21,6 +21,22 @@ function genId() {
     return id;
 }
 
+
+// router.get('', async (req, res) => {//Get all bugs
+//   try {
+//     const bugs = await GetAllBugs();
+//     if (!bugs) {
+//       res.status(404).json({message: 'Bugs not found'});
+//       return;
+//     }
+//     else {
+//       res.status(200).json(bugs);
+//     }
+//   }
+//   catch {
+//     res.status(500).json({message: 'Error getting bugs'});
+//   }
+// });
 
 router.get('', async (req, res) => {
   const params = req.query;

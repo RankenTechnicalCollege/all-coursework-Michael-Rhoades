@@ -5,12 +5,114 @@ const router = express.Router();
 import debug from 'debug';
 const debugUser = debug('app:User');
 
-import { GetAllUsers, GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser } from "../../database.js";
+import { GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetUsers } from "../../database.js";
 
 import bcrypt from 'bcrypt';
 
 import { validate, validId } from '../../Middleware/validator.js';
 import { schemaRegister, schemaLogin, schemaUpdateUser } from '../../Validation/schemaUsers.js';
+
+// router.get("", async (req, res) => {
+//   try {
+//     const users = await GetAllUsers();
+//     if (!users) {
+//       res.status(404).json({message: 'Users not found'});
+//       return;
+//     }
+//     else {
+//       res.status(200).json(users);
+//     }
+//   }
+//   catch {
+//     res.status(500).json({message: 'Error getting users'})
+//   }
+// });
+
+// router.get("/list", async (req, res) => {
+//   const params = req.query;
+//   let queries = [];
+//   if (!params) {
+//     try {
+//       const users = await GetAllUsers();
+//       if (!users) {
+//         res.status(404).json({message: 'Users not found'});
+//         return;
+//       }
+//       else {
+//         res.status(200).json(users);
+//         return;
+//       }
+//     }
+//     catch {
+//       res.status(500).json({message: 'Error getting users'})
+//       return;
+//     }
+//   }
+//   if (params.keywords) {
+
+//   }
+//   if (params.role) {
+//     queries.push({$match: {role: params.role}});
+//   }
+//   if (params.maxAge) {
+//     let date = new Date(Date.now() - (params.maxAge * 86400000));
+//     queries.push({$match: {joined: {$gte: date}}});
+//   }
+//   if (params.minAge) {
+//     let date = new Date(Date.now() - (params.minAge * 86400000));
+//     queries.push({$match: {joined: {$lte: date}}});
+//   }
+//   if (params.sortBy) {
+//     if (params.sortBy === "familyName") {
+//       queries.push({$sort: {familyName: 1, givenName: 1, joined: 1}});
+//     }
+//     else if (params.sortBy === "role") {
+//       queries.push({$sort: {role: 1, givenName: 1, familyName: 1, joined: 1}});
+//     }
+//     else if (params.sortBy === "newest") {
+//       queries.push({$sort: {joined: -1}});
+//     }
+//     else if (params.sortBy === "oldest") {
+//       queries.push({$sort: {joined: 1}});
+//     }
+//     else {
+//       queries.push({$sort: {givenName: 1, familyName: 1, joined: 1}});
+//     }
+//   }
+//   else {
+//     queries.push({$sort: {givenName: 1, familyName: 1, joined: 1}});
+//   }
+//   if (params.pageNumber) {
+//     const pageNumber = parseInt(params.pageNumber);
+//     let pageSize = parseInt(params.pageSize);
+//     if (!params.pageSize || isNaN(pageSize) || pageSize < 1) {
+//       pageSize = 5;
+//     }
+//     const toSkip = (pageNumber - 1) * pageSize;
+//     debugUser(pageNumber);
+//     debugUser(pageSize);
+//     debugUser(toSkip);
+//     queries.push({$skip: toSkip});
+//   }
+//   if (params.pageSize) {
+//     const pageSize = parseInt(params.pageSize);
+//     queries.push({$limit: pageSize});
+//   }
+//   else {
+//     queries.push({$limit: 5});
+//   }
+
+//   const foundUsers = await SearchUsers(queries);
+//   debugUser(queries);
+//   if (!foundUsers) {
+//     res.status(404).json({message: 'Users not found'});
+//     return;
+//   }
+//   else {
+//     res.status(200).json(foundUsers);
+//     return;
+//   }
+// });
 
 router.get("", validId('userId'), async (req, res) => {
   const params = req.query;
@@ -70,6 +172,7 @@ router.post("", validate(schemaRegister), async (req, res) => {
   newUser.password = await bcrypt.hash(newUser.password, 10);
   newUser.createdBugs = [];
   newUser.assignedBugs = [];
+  newUser.joined = new Date(Date.now());
   const exists = await GetUserByEmail(newUser.email);
   debugUser(exists);
   if (exists != null) {
@@ -129,5 +232,7 @@ router.delete("/:userId", validId('userId'), async (req, res) => {
   }
   res.status(200).json({message: `User ${id} deleted successfully.`});
 });
+
+
 
 export { router as userRouter };

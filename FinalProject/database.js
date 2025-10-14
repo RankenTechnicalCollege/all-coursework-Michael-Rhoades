@@ -28,10 +28,10 @@ async function connectToDatabase() {
 
 
 //User Navigation
-async function GetAllUsers() {
-  const db = await connectToDatabase();
-  return await db.collection("users").find({}).toArray();
-}
+// async function GetAllUsers() {
+//   const db = await connectToDatabase();
+//   return await db.collection("users").find({}).toArray();
+// }
 
 async function GetUserById(id) {
   const db = await connectToDatabase();
@@ -171,6 +171,23 @@ async function DeleteTestCase(bugId, testCaseId) {
   return x;
 }
 
+
+// search modifier
+// async function SearchUsers(query) {
+//   const db = await connectToDatabase();
+//   return await db.collection("users").aggregate(query).toArray();
+// }
+
+async function GetUsers(filter, limit, skip, sort) {
+  const db = await connectToDatabase();
+  return await db.collection("users").find(filter).sort(sort).skip(skip).limit(limit).toArray();
+}
+
+async function GetBugs(filter, limit, skip, sort) {
+  const db = await connectToDatabase();
+  return await db.collection("bugs").find(filter).sort(sort).skip(skip).limit(limit).toArray();
+}
+
 //ping();
 
-export{GetAllUsers, GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetAllBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase};
+export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs};
