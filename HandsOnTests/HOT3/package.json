@@ -1,0 +1,36 @@
+{
+  "name": "hot3",
+  "version": "1.0.0",
+  "description": "Hands on test 3",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon -r dotenv/config index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RankenTechnicalCollege/all-coursework-Michael-Rhoades.git"
+  },
+  "keywords": [
+    "hot",
+    "test",
+    "michael",
+    "rhoades"
+  ],
+  "author": "Michael Rhoades",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RankenTechnicalCollege/all-coursework-Michael-Rhoades/issues"
+  },
+  "homepage": "https://github.com/RankenTechnicalCollege/all-coursework-Michael-Rhoades#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "debug": "^4.4.3",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "joi": "^18.0.1",
+    "mongodb": "^6.20.0"
+  }
+}
