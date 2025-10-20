@@ -1,6 +1,7 @@
 
 import './App.css'
 import './index.css'
+
 function App() {
 
   return (
@@ -14,8 +15,8 @@ function App() {
             </button>
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
               <div class="navbar-nav">
-                <a class="nav-link" href="#">Users</a>
-                <a class="nav-link" href="#">Bugs</a>
+                <a class="nav-link" href="api/users">Users</a>
+                <a class="nav-link" href="api/bugs">Bugs</a>
               </div>
             </div>
           </div>
