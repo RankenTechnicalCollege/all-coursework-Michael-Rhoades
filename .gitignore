@@ -13,3 +13,5 @@ FinalProject/.env
 FinalProject/.env
 /FinalProject/node_modules
 /HandsOnTests/HOT3/node_modules
+/Demos/BetterAuthDemo/node_modules
+Demos/BetterAuthDemo/.env
