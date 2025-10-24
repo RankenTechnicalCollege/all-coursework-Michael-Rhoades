@@ -5,6 +5,7 @@ import debug from "debug";
 const debugDb = debug("app:database");
 
 let _db = null;
+let _client = null;
 
 async function connectToDatabase() {
   if (!_db) {
@@ -35,32 +36,32 @@ async function connectToDatabase() {
 
 async function GetUserById(id) {
   const db = await connectToDatabase();
-  return await db.collection("users").findOne({_id: new ObjectId(id)});
+  return await db.collection("user").findOne({_id: new ObjectId(id)});
 }
 
 async function GetUserByEmail(email) {
   const db = await connectToDatabase();
-  return await db.collection("users").findOne({email: email});
+  return await db.collection("user").findOne({email: email});
 }
 
 async function AddUser(user) {
   const db = await connectToDatabase();
-  return await db.collection("users").insertOne(user);
+  return await db.collection("user").insertOne(user);
 }
 
 async function Login(email, password) {
   const db = await connectToDatabase();
-  return await db.collection("users").findOne({email: email, password: password});
+  return await db.collection("user").findOne({email: email, password: password});
 }
 
 async function UpdateUser(id, password, fullName, givenName, familyName, role) {
   const db = await connectToDatabase();
-  return await db.collection("users").updateOne({_id: new ObjectId(id)},{$set: {password: password, fullName: fullName, givenName: givenName, familyName: familyName, role: role}});
+  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {password: password, fullName: fullName, givenName: givenName, familyName: familyName, role: role}});
 }
 
 async function DeleteUser(id) {
   const db = await connectToDatabase();
-  return await db.collection("users").deleteOne({_id: new ObjectId(id)});
+  return await db.collection("user").deleteOne({_id: new ObjectId(id)});
 }
 
 
@@ -80,24 +81,24 @@ async function AddBug(bug) {
   return await db.collection("bugs").insertOne(bug);
 }
 
-async function UpdateBug(id, title, description, stepsToReproduce) {
+async function UpdateBug(id, title, description, stepsToReproduce, userId) {
   const db = await connectToDatabase();
-  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {title: title, description: description, stepsToReproduce: stepsToReproduce, lastUpdated: new Date(Date.now())}});
+  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {title: title, description: description, stepsToReproduce: stepsToReproduce, lastUpdated: new Date(Date.now()), lastUpdatedBy: userId}});
 }
 
-async function ClassifyBug(id, classification) {
+async function ClassifyBug(id, classification, classifiedBy) {
   const db = await connectToDatabase();
-  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {classification: classification, classifiedOn: new Date(Date.now()), lastUpdated: new Date(Date.now())}});
+  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {classification: classification, classifiedBy: classifiedBy, classifiedOn: new Date(Date.now()), lastUpdated: new Date(Date.now())}});
 }
 
-async function AssignBug(id, assignedToUserId, assignedToUserName) {
+async function AssignBug(id, assignedToUserId, assignedToUserName, assignedBy) {
   const db = await connectToDatabase();
-  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {assignedToUserId: assignedToUserId, assignedToUserName: assignedToUserName, assignedOn: new Date(Date.now()), lastUpdated: new Date(Date.now())}});
+  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {assignedToUserId: assignedToUserId, assignedToUserName: assignedToUserName, assignedOn: new Date(Date.now()), assignedBy: assignedBy, lastUpdated: new Date(Date.now())}});
 }
 
-async function CloseBug(id) {
+async function CloseBug(id, closedBy) {
   const db = await connectToDatabase();
-  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {closed: true, closedOn: new Date(Date.now()), lastUpdated: new Date(Date.now())}});
+  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {closed: true, closedBy: closedBy, closedOn: new Date(Date.now()), lastUpdated: new Date(Date.now())}});
 }
 
 
@@ -188,6 +189,26 @@ async function GetBugs(filter, limit, skip, sort) {
   return await db.collection("bugs").find(filter).sort(sort).skip(skip).limit(limit).toArray();
 }
 
+
+
+// General gets
+
+async function getClient() {
+  if (!_client) {
+    await connectToDatabase();
+  }
+  return _client;
+}
+
+async function getDatabase() {
+  return await connectToDatabase();
+}
+
 //ping();
 
-export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs};
+async function AddEditToBug(bugId, edit) {
+  const db = await connectToDatabase();
+  return await db.collection("bugs").updateOne({_id: new ObjectId(bugId)},{$push: {edits: edit}});
+}
+
+export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs, getClient, getDatabase, connectToDatabase, AddEditToBug};

@@ -25,7 +25,7 @@ const schemaCloseBug = Joi.object({
 }).required();
 
 const schemaAddComment = Joi.object({
-  authorId: Joi.string().length(24).hex().required(),
+  // authorId: Joi.string().length(24).hex().required(),
   text: Joi.string().min(1).required()
 }).required();
 

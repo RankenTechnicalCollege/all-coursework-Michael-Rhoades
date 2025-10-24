@@ -18,12 +18,12 @@ async function connectToDatabase() {
   return _db;
 }
 
-async function ping() {
+// async function ping() {
  
-  const db = await connectToDatabase();
-  const pong = await db.command({ ping: 1 });
-  debugDb("Ping", pong);
-}
+//   const db = await connectToDatabase();
+//   const pong = await db.command({ ping: 1 });
+//   debugDb("Ping", pong);
+// }
 
 async function getClient() {
   if (!_client) {
