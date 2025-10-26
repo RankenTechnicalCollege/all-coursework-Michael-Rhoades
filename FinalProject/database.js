@@ -206,9 +206,9 @@ async function getDatabase() {
 
 //ping();
 
-async function AddEditToBug(bugId, edit) {
+async function AddEdit(edit) {
   const db = await connectToDatabase();
-  return await db.collection("bugs").updateOne({_id: new ObjectId(bugId)},{$push: {edits: edit}});
+  return await db.collection("edits").insertOne(edit);
 }
 
-export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs, getClient, getDatabase, connectToDatabase, AddEditToBug};
+export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs, getClient, getDatabase, connectToDatabase, AddEdit};

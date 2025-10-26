@@ -4,7 +4,7 @@ const router = express.Router();
 import debug from 'debug';  
 const debugBug = debug('app:BugRouter');
 
-import { GetBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, AddEditToBug } from "../../database.js";
+import { GetBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, AddEdit } from "../../database.js";
 
 import { validate, validId } from '../../Middleware/validator.js';
 import { isAuthenticated } from "../../Middleware/isAuthenticated.js";
@@ -117,7 +117,7 @@ router.post('', isAuthenticated, validate(schemaCreateBug), async (req, res) => 
     target: addedBug.insertedId,
     preformedBy: author.email
   }
-  await AddEditToBug(addedBug.insertedId, log);
+  await AddEdit(log);
   res.status(201).json({message: `Bug ${bugToAdd.title} added successfully.`});
 });
 
@@ -173,7 +173,7 @@ router.patch('/:bugId', isAuthenticated, validId('bugId'), validate(schemaUpdate
     return;
   }
   
-  await AddEditToBug(id, log);
+  await AddEdit(log);
   debugBug(log);
   res.status(200).json({message: `Bug ${id} updated successfully.`});
 });
@@ -211,7 +211,7 @@ router.patch('/:bugId/classify', isAuthenticated, validId('bugId'), validate(sch
     res.status(404).json({message: 'Bug not found'})
     return;
   }
-  await AddEditToBug(id, log);
+  await AddEdit(log);
   res.status(200).json({message: `Bug ${id} classified successfully`})
 });
 
@@ -254,7 +254,7 @@ router.patch('/:bugId/assign', isAuthenticated, validId('bugId'), validate(schem
     res.status(404).json({message: 'Bug not found'})
     return;
   }
-  await AddEditToBug(id, log);
+  await AddEdit(log);
   res.status(200).json({message: `${userToAssign.fullName} assigned to bug ${id}`})
 });
 
@@ -289,7 +289,7 @@ router.patch('/:bugId/close', isAuthenticated, validId('bugId'), validate(schema
     res.status(404).json({message: 'Bug not found'});
     return;
   }
-  await AddEditToBug(id, log);
+  await AddEdit(log);
   res.status(200).json({message: `Bug ${id} closed.`});
 });
 
@@ -398,13 +398,30 @@ router.post('/:bugId/tests', isAuthenticated, validId('bugId'), validate(schemaA
     res.status(404).json({message: 'Bug not found'});
     return;
   }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
   const testCaseToAdd = req.body;
   testCaseToAdd.id = new ObjectId(genId());
+  testCaseToAdd.createdOn = new Date(Date.now());
+  testCaseToAdd.createdBy = authorId;
+  const log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "addTestCase",
+    target: bugId,
+    testCaseId: testCaseToAdd.id,
+    preformedBy: author.email
+  }
   const addedTestCase = await AddTestCase(bugId, testCaseToAdd);
   if (addedTestCase.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'});
     return;
   }
+  await AddEdit(log);
   res.status(201).json({message: `Test case added to bug ${bugId}`});
 });
 
@@ -415,6 +432,12 @@ router.patch('/:bugId/tests/:testCaseId', isAuthenticated, validId('bugId'), val
     res.status(404).json({message: 'Bug not found'});
     return;
   }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
   const testCaseId = req.params.testCaseId;
   const testCaseToUpdate = req.body;
   const oldTestCase = await GetTestCaseById(bugId, testCaseId);
@@ -422,13 +445,37 @@ router.patch('/:bugId/tests/:testCaseId', isAuthenticated, validId('bugId'), val
     res.status(404).json({message: 'Test case not found'});
     return;
   }
-  const title = testCaseToUpdate.title ? testCaseToUpdate.title : oldTestCase.title;
-  const result = testCaseToUpdate.result ? testCaseToUpdate.result : oldTestCase.result;
+  let log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "updateTestCase",
+    target: bugId,
+    testCaseId: testCaseToAdd.id,
+    edits: [],
+    preformedBy: author.email
+  }
+  let title;
+  let result;
+  if (testCaseToUpdate.title && testCaseToUpdate.title !== oldTestCase.title) {
+    title = testCaseToUpdate.title;
+    log.edits.push({field: "title", oldValue: oldTestCase.title, newValue: testCaseToUpdate.title});
+  }
+  else {
+    title = oldTestCase.title;
+  }
+  if (testCaseToUpdate.result && testCaseToUpdate.result !== oldTestCase.result) {
+    result = testCaseToUpdate.result;
+    log.edits.push({field: "result", oldValue: oldTestCase.result, newValue: testCaseToUpdate.result});
+  }
+  else {
+    result = oldTestCase.result;
+  }
   const updatedTestCase = await UpdateTestCase(bugId, testCaseId, title, result);
   if (updatedTestCase.modifiedCount === 0) {
     res.status(404).json({message: 'Bug or test case not found'});
     return;
   }
+  await AddEdit(log);
   res.status(200).json({message: `Test case ${testCaseId} updated successfully.`});
 });
 
@@ -439,6 +486,12 @@ router.delete('/:bugId/tests/:testCaseId', isAuthenticated, validId('bugId'), va
     res.status(404).json({message: 'Bug not found'});
     return;
   }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
   let testCaseId = req.params.testCaseId;
   const testCaseToDelete = await GetTestCaseById(bugId, testCaseId);
   if (!testCaseToDelete) {
@@ -446,12 +499,21 @@ router.delete('/:bugId/tests/:testCaseId', isAuthenticated, validId('bugId'), va
     return;
   }
   testCaseId = new ObjectId(req.params.testCaseId);
+  log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "deleteTestCase",
+    target: bugId,
+    testCaseId: testCaseId,
+    preformedBy: author.email
+  }
   const deletedTestCase = await DeleteTestCase(bugId, testCaseId);
   debugBug(deletedTestCase);
   if (deletedTestCase.modifiedCount === 0) {
     res.status(404).json({message: 'Bug or test case not found'});
     return;
   }
+  await AddEdit(log);
   res.status(200).json({message: `Test case ${testCaseId} deleted successfully.`});
 });
 
