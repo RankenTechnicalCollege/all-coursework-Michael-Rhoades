@@ -4,9 +4,11 @@ const router = express.Router();
 import debug from 'debug';  
 const debugBug = debug('app:BugRouter');
 
-import { GetBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase } from "../../database.js";
+import { GetBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, AddEdit } from "../../database.js";
 
 import { validate, validId } from '../../Middleware/validator.js';
+import { isAuthenticated } from "../../Middleware/isAuthenticated.js";
+
 import { schemaCreateBug, schemaUpdateBug, schemaClassifyBug, schemaAssignBug, schemaCloseBug, schemaAddComment, schemaAddTestCase, schemaUpdateTestCase } from '../../Validation/schemaBugs.js';
 
 import { ObjectId } from "mongodb";
@@ -22,23 +24,7 @@ function genId() {
 }
 
 
-// router.get('', async (req, res) => {//Get all bugs
-//   try {
-//     const bugs = await GetAllBugs();
-//     if (!bugs) {
-//       res.status(404).json({message: 'Bugs not found'});
-//       return;
-//     }
-//     else {
-//       res.status(200).json(bugs);
-//     }
-//   }
-//   catch {
-//     res.status(500).json({message: 'Error getting bugs'});
-//   }
-// });
-
-router.get('', async (req, res) => {
+router.get('', isAuthenticated, async (req, res) => {
   const params = req.query;
 
   const pageNumber = parseInt(params.pageNumber) || 1;
@@ -85,7 +71,7 @@ router.get('', async (req, res) => {
   }
 });
 
-router.get('/:bugId', validId('bugId'), async (req, res) => {//Get bug by id
+router.get('/:bugId', isAuthenticated, validId('bugId'), async (req, res) => {//Get bug by id
   const bug = await GetBugById(req.params.bugId);
   if (!bug) {
     res.status(404).json({message: 'Bug not found'});
@@ -94,11 +80,17 @@ router.get('/:bugId', validId('bugId'), async (req, res) => {//Get bug by id
   res.status(200).json(bug);
 });
 
-router.post('', validate(schemaCreateBug), async (req, res) => {//Create new bug
+router.post('', isAuthenticated, validate(schemaCreateBug), async (req, res) => {//Create new bug
   const bugToAdd = req.body;
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
   bugToAdd.createdOn = new Date(Date.now());
   bugToAdd.lastUpdated = new Date(Date.now());
-  bugToAdd.authorOfBug = null;
+  bugToAdd.authorOfBug = authorId;
   bugToAdd.edits = [];
   bugToAdd.comments = [];
   bugToAdd.classification = "unclassified";
@@ -113,10 +105,23 @@ router.post('', validate(schemaCreateBug), async (req, res) => {//Create new bug
   bugToAdd.closed = false;
   bugToAdd.closedOn = null;
   const addedBug = await AddBug(bugToAdd);
+  debugBug(addedBug);
+  if (!addedBug.acknowledged) {
+    res.status(500).json({message: 'Error adding bug'});
+    return;
+  }
+  const log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "create",
+    target: addedBug.insertedId,
+    preformedBy: author.email
+  }
+  await AddEdit(log);
   res.status(201).json({message: `Bug ${bugToAdd.title} added successfully.`});
 });
 
-router.patch('/:bugId', validId('bugId'), validate(schemaUpdateBug), async (req, res) => {//Update bug details
+router.patch('/:bugId', isAuthenticated, validId('bugId'), validate(schemaUpdateBug), async (req, res) => {//Update bug details
   const id = req.params.bugId;
   const bugToUpdate = req.body;
   const oldBug = await GetBugById(id);
@@ -124,57 +129,167 @@ router.patch('/:bugId', validId('bugId'), validate(schemaUpdateBug), async (req,
     res.status(404).json({message: 'Bug not found'});
     return;
   }
-  const title = bugToUpdate.title ? bugToUpdate.title : oldBug.title;
-  const description = bugToUpdate.description ? bugToUpdate.description : oldBug.description;
-  const stepsToReproduce = bugToUpdate.stepsToReproduce ? bugToUpdate.stepsToReproduce : oldBug.stepsToReproduce;
-  const updatedBug = await UpdateBug(id,title,description,stepsToReproduce);
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
+  let log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "update",
+    target: id,
+    update: [],
+    preformedBy: author.email
+  }
+  let title;
+  let description;
+  let stepsToReproduce;
+  if (bugToUpdate.title && bugToUpdate.title !== oldBug.title) {
+    title = bugToUpdate.title;
+    log.update.push({field: "title", oldValue: oldBug.title, newValue: bugToUpdate.title});
+  }
+  else {
+    title = oldBug.title;
+  }
+  if (bugToUpdate.description && bugToUpdate.description !== oldBug.description) {
+    description = bugToUpdate.description;
+    log.update.push({field: "description", oldValue: oldBug.description, newValue: bugToUpdate.description});
+  }
+  else {
+    description = oldBug.description;
+  }
+  if (bugToUpdate.stepsToReproduce && bugToUpdate.stepsToReproduce !== oldBug.stepsToReproduce) {
+    stepsToReproduce = bugToUpdate.stepsToReproduce;
+    log.update.push({field: "stepsToReproduce", oldValue: oldBug.stepsToReproduce, newValue: bugToUpdate.stepsToReproduce});
+  }
+  else {
+    stepsToReproduce = oldBug.stepsToReproduce;
+  }
+  const updatedBug = await UpdateBug(id,title,description,stepsToReproduce, authorId);
   if (updatedBug.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'});
     return;
   }
+  
+  await AddEdit(log);
+  debugBug(log);
   res.status(200).json({message: `Bug ${id} updated successfully.`});
 });
 
-router.patch('/:bugId/classify', validId('bugId'), validate(schemaClassifyBug), async (req, res) => {//Classify bug
+router.patch('/:bugId/classify', isAuthenticated, validId('bugId'), validate(schemaClassifyBug), async (req, res) => {//Classify bug
   const id = req.params.bugId;
   const bugToUpdate = req.body;
-  const classifiedBug = await ClassifyBug(id,bugToUpdate.classification);
+  const oldBug = await GetBugById(id);
+  if (!oldBug) {
+    res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
+  let log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "update",
+    target: id,
+    update: [],
+    preformedBy: author.email
+  }
+  if (bugToUpdate.classification != oldBug.classification) {
+    log.update.push({field: "classification", oldValue: oldBug.classification, newValue: bugToUpdate.classification});
+  }
+  if (oldBug.classifiedBy == null || oldBug.classifiedBy !== authorId) {
+    log.update.push({field: "classifiedBy", oldValue: oldBug.classifiedBy, newValue: authorId});
+  }
+  const classifiedBug = await ClassifyBug(id,bugToUpdate.classification, authorId);
   if (classifiedBug.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'})
     return;
   }
+  await AddEdit(log);
   res.status(200).json({message: `Bug ${id} classified successfully`})
 });
 
-router.patch('/:bugId/assign', validId('bugId'), validate(schemaAssignBug), async (req, res) => {//Assign bug to user
+router.patch('/:bugId/assign', isAuthenticated, validId('bugId'), validate(schemaAssignBug), async (req, res) => {//Assign bug to user
   const id = req.params.bugId;
   const bugToAssign = req.body;
+  const oldBug = await GetBugById(id);
+  if (!oldBug) {
+    res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
   const userToAssign = await GetUserById(bugToAssign.assignedToUserId);
   if (!userToAssign) {
     res.status(404).json({message: 'User not found'});
     return;
   }
   debugBug(userToAssign);
-  const assignedBug = await AssignBug(id,bugToAssign.assignedToUserId,userToAssign.fullName);
+  let log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "update",
+    target: id,
+    update: [],
+    preformedBy: author.email
+  }
+  if (userToAssign._id.toString() !== oldBug.assignedToUserId) {
+    log.update.push({field: "assignedToUserId", oldValue: oldBug.assignedToUserId, newValue: userToAssign._id.toString()});
+  }
+  if (oldBug.assignedBy == null || oldBug.assignedBy !== authorId) {
+    log.update.push({field: "assignedBy", oldValue: oldBug.assignedBy, newValue: authorId});
+  }
+  const assignedBug = await AssignBug(id,bugToAssign.assignedToUserId,userToAssign.fullName, authorId);
   if (assignedBug.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'})
     return;
   }
+  await AddEdit(log);
   res.status(200).json({message: `${userToAssign.fullName} assigned to bug ${id}`})
 });
 
-router.patch('/:bugId/close', validId('bugId'), validate(schemaCloseBug), async (req, res) => {//Close bug
+router.patch('/:bugId/close', isAuthenticated, validId('bugId'), validate(schemaCloseBug), async (req, res) => {//Close bug
   const id = req.params.bugId;
   const bugToClose = req.body;
+  const oldBug = await GetBugById(id);
+  if (!oldBug) {
+    res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
   if (!bugToClose.closed) {
     res.status(400).json({message: 'To close a bug, the "closed" field must be true'});
     return;
   }
-  const closedBug = await CloseBug(id);
+  const log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "update",
+    target: id,
+    update: [{field: "closed", oldValue: oldBug.closed, newValue: true}],
+    preformedBy: author.email
+  }
+  const closedBug = await CloseBug(id, authorId);
   if (closedBug.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'});
     return;
   }
+  await AddEdit(log);
   res.status(200).json({message: `Bug ${id} closed.`});
 });
 
@@ -182,7 +297,7 @@ router.patch('/:bugId/close', validId('bugId'), validate(schemaCloseBug), async 
 
 // Comments
 
-router.get('/:bugId/comments', validId('bugId'), async (req, res) => {
+router.get('/:bugId/comments', isAuthenticated, validId('bugId'), async (req, res) => {
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
@@ -197,7 +312,7 @@ router.get('/:bugId/comments', validId('bugId'), async (req, res) => {
   res.status(200).json(comments);
 })
 
-router.get('/:bugId/comments/:commentId', validId('bugId'), validId('commentId'), async (req, res) => {
+router.get('/:bugId/comments/:commentId', isAuthenticated, validId('bugId'), validId('commentId'), async (req, res) => {
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
@@ -214,20 +329,23 @@ router.get('/:bugId/comments/:commentId', validId('bugId'), validId('commentId')
   res.status(200).json(comment);
 })
 
-router.post('/:bugId/comments', validId('bugId'), validate(schemaAddComment), async (req, res) => {
+router.post('/:bugId/comments', isAuthenticated, validId('bugId'), validate(schemaAddComment), async (req, res) => {
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
     res.status(404).json({message: 'Bug not found'});
     return;
   }
-  const commentToAdd = req.body;
-  if (!await GetUserById(commentToAdd.authorId)) {
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
     res.status(404).json({message: 'Author not found'});
     return;
   }
+  const commentToAdd = req.body;
   commentToAdd.commentedOn = new Date(Date.now());
   commentToAdd.id = new ObjectId(genId());
+  commentToAdd.author = author.email;
   debugBug(commentToAdd);
   const addedComment = await AddComment(bugId, commentToAdd);
   debugBug(addedComment);
@@ -242,7 +360,7 @@ router.post('/:bugId/comments', validId('bugId'), validate(schemaAddComment), as
 
 // Test Cases
 
-router.get('/:bugId/tests', validId('bugId'), async (req, res) => {
+router.get('/:bugId/tests', isAuthenticated, validId('bugId'), async (req, res) => {
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
@@ -257,7 +375,7 @@ router.get('/:bugId/tests', validId('bugId'), async (req, res) => {
   res.status(200).json(testCases);
 });
 
-router.get('/:bugId/tests/:testCaseId', validId('bugId'), validId('testCaseId'), async (req, res) => {
+router.get('/:bugId/tests/:testCaseId', isAuthenticated, validId('bugId'), validId('testCaseId'), async (req, res) => {
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
@@ -273,28 +391,51 @@ router.get('/:bugId/tests/:testCaseId', validId('bugId'), validId('testCaseId'),
   res.status(200).json(testCase);
 });
 
-router.post('/:bugId/tests', validId('bugId'), validate(schemaAddTestCase), async (req, res) => {
+router.post('/:bugId/tests', isAuthenticated, validId('bugId'), validate(schemaAddTestCase), async (req, res) => {
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
     res.status(404).json({message: 'Bug not found'});
     return;
   }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
   const testCaseToAdd = req.body;
   testCaseToAdd.id = new ObjectId(genId());
+  testCaseToAdd.createdOn = new Date(Date.now());
+  testCaseToAdd.createdBy = authorId;
+  const log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "addTestCase",
+    target: bugId,
+    testCaseId: testCaseToAdd.id,
+    preformedBy: author.email
+  }
   const addedTestCase = await AddTestCase(bugId, testCaseToAdd);
   if (addedTestCase.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'});
     return;
   }
+  await AddEdit(log);
   res.status(201).json({message: `Test case added to bug ${bugId}`});
 });
 
-router.patch('/:bugId/tests/:testCaseId', validId('bugId'), validId('testCaseId'), validate(schemaUpdateTestCase), async (req, res) => {
+router.patch('/:bugId/tests/:testCaseId', isAuthenticated, validId('bugId'), validId('testCaseId'), validate(schemaUpdateTestCase), async (req, res) => {
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
     res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
     return;
   }
   const testCaseId = req.params.testCaseId;
@@ -304,21 +445,51 @@ router.patch('/:bugId/tests/:testCaseId', validId('bugId'), validId('testCaseId'
     res.status(404).json({message: 'Test case not found'});
     return;
   }
-  const title = testCaseToUpdate.title ? testCaseToUpdate.title : oldTestCase.title;
-  const result = testCaseToUpdate.result ? testCaseToUpdate.result : oldTestCase.result;
+  let log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "updateTestCase",
+    target: bugId,
+    testCaseId: testCaseToAdd.id,
+    edits: [],
+    preformedBy: author.email
+  }
+  let title;
+  let result;
+  if (testCaseToUpdate.title && testCaseToUpdate.title !== oldTestCase.title) {
+    title = testCaseToUpdate.title;
+    log.edits.push({field: "title", oldValue: oldTestCase.title, newValue: testCaseToUpdate.title});
+  }
+  else {
+    title = oldTestCase.title;
+  }
+  if (testCaseToUpdate.result && testCaseToUpdate.result !== oldTestCase.result) {
+    result = testCaseToUpdate.result;
+    log.edits.push({field: "result", oldValue: oldTestCase.result, newValue: testCaseToUpdate.result});
+  }
+  else {
+    result = oldTestCase.result;
+  }
   const updatedTestCase = await UpdateTestCase(bugId, testCaseId, title, result);
   if (updatedTestCase.modifiedCount === 0) {
     res.status(404).json({message: 'Bug or test case not found'});
     return;
   }
+  await AddEdit(log);
   res.status(200).json({message: `Test case ${testCaseId} updated successfully.`});
 });
 
-router.delete('/:bugId/tests/:testCaseId', validId('bugId'), validId('testCaseId'), async (req, res) => {
+router.delete('/:bugId/tests/:testCaseId', isAuthenticated, validId('bugId'), validId('testCaseId'), async (req, res) => {
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
     res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
     return;
   }
   let testCaseId = req.params.testCaseId;
@@ -328,12 +499,21 @@ router.delete('/:bugId/tests/:testCaseId', validId('bugId'), validId('testCaseId
     return;
   }
   testCaseId = new ObjectId(req.params.testCaseId);
+  log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "deleteTestCase",
+    target: bugId,
+    testCaseId: testCaseId,
+    preformedBy: author.email
+  }
   const deletedTestCase = await DeleteTestCase(bugId, testCaseId);
   debugBug(deletedTestCase);
   if (deletedTestCase.modifiedCount === 0) {
     res.status(404).json({message: 'Bug or test case not found'});
     return;
   }
+  await AddEdit(log);
   res.status(200).json({message: `Test case ${testCaseId} deleted successfully.`});
 });
 
