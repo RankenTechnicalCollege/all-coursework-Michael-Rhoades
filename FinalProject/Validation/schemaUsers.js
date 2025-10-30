@@ -16,11 +16,11 @@ const schemaLogin = Joi.object({
 
 const schemaUpdateUser = Joi.object({
   email: Joi.string().email().optional(),
-  password: Joi.string().min(6).optional(),
+  //password: Joi.string().min(6).optional(),
   fullName: Joi.string().min(1).optional(),
   givenName: Joi.string().min(1).optional(),
   familyName: Joi.string().min(1).optional(),
-  role: Joi.string().min(1).optional() // to add: .valid(<roles>)
+  role: Joi.array().min(1).optional() // to add: .valid(<roles>)
 }).required();
 
 
