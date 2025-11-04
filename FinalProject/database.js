@@ -54,9 +54,9 @@ async function Login(email, password) {
   return await db.collection("user").findOne({email: email, password: password});
 }
 
-async function UpdateUser(id, password, fullName, givenName, familyName, role) {
+async function UpdateUser(id, fullName, givenName, familyName, role) {
   const db = await connectToDatabase();
-  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {password: password, fullName: fullName, givenName: givenName, familyName: familyName, role: role}});
+  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {fullName: fullName, givenName: givenName, familyName: familyName, role: role, updatedAt: new Date(Date.now())}});
 }
 
 async function DeleteUser(id) {
@@ -181,7 +181,7 @@ async function DeleteTestCase(bugId, testCaseId) {
 
 async function GetUsers(filter, limit, skip, sort) {
   const db = await connectToDatabase();
-  return await db.collection("users").find(filter).sort(sort).skip(skip).limit(limit).toArray();
+  return await db.collection("user").find(filter).sort(sort).skip(skip).limit(limit).toArray();
 }
 
 async function GetBugs(filter, limit, skip, sort) {
@@ -211,4 +211,12 @@ async function AddEdit(edit) {
   return await db.collection("edits").insertOne(edit);
 }
 
-export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs, getClient, getDatabase, connectToDatabase, AddEdit};
+async function GetPermissions(role) {
+  const db = await connectToDatabase();
+  if (role == null) {
+    return undefined;
+  }
+  return await db.collection("role").findOne({role:role})
+}
+
+export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs, getClient, getDatabase, connectToDatabase, AddEdit, GetPermissions};

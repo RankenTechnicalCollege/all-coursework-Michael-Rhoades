@@ -6,8 +6,8 @@ const client = await getClient();
 const db = await connectToDatabase();
 
 export const auth = betterAuth({
-    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3012",
-    trustedOrigins: ["http://localhost:5173", "http://localhost:8080","http://localhost:3012", "http://localhost:3000", "https://issuetracker-base-348399308686.us-central1.run.app"],
+    baseURL: process.env.BETTER_AUTH_URL || "http://localhost:2023",
+    trustedOrigins: ["http://localhost:5173", "http://localhost:2023", "http://localhost:3000"],
     database: mongodbAdapter(db, {
         client
     }),

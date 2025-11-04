@@ -5,6 +5,7 @@ import debug from "debug";
 const debugDb = debug("app:database");
 
 let _db = null;
+let _client = null;
 
 async function connectToDatabase() {
   if (!_db) {
@@ -18,9 +19,9 @@ async function connectToDatabase() {
   return _db;
 }
 
-async function GetProducts() {
+async function GetProducts(filter, limit, skip, sort) {
   const db = await connectToDatabase();
-  return await db.collection("products").find({}).toArray();
+  return await db.collection("products").find(filter).sort(sort).skip(skip).limit(limit).toArray();
 }
 
 async function GetProductById(id) {
@@ -48,4 +49,42 @@ async function DeleteProduct(id) {
   return await db.collection("products").deleteOne({_id: new ObjectId(id)});
 }
 
-export {GetProducts, GetProductById, GetProductByName, AddProduct, UpdateProduct, DeleteProduct}
+
+async function GetAllUsers() {
+  const db = await connectToDatabase();
+  return await db.collection("user").find({}).toArray();
+}
+
+async function GetUserById(id) {
+  const db = await connectToDatabase();
+  return await db.collection("user").findOne({_id: new ObjectId(id)});
+}
+
+async function UpdateUser(id, fullName, email) {
+  const db = await connectToDatabase();
+  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {fullName: fullName, email: email, updatedAt: new Date(Date.now())}});
+}
+
+async function UpdatePassword(id, password) {
+  const db = await connectToDatabase();
+  return await db.collection("account").updateOne({userId: new ObjectId(id)},{$set: {password: password, updatedAt: new Date(Date.now())}});
+}
+
+async function GetAccount(id) {
+  const db = await connectToDatabase();
+  return await db.collection("account").findOne({userId: new ObjectId(id)});
+}
+
+
+async function getClient() {
+  if (!_client) {
+    await connectToDatabase();
+  }
+  return _client;
+}
+
+async function getDatabase() {
+  return await connectToDatabase();
+}
+
+export {GetProducts, GetProductById, GetProductByName, AddProduct, UpdateProduct, DeleteProduct, getClient, getDatabase, connectToDatabase, GetAllUsers, GetUserById, UpdateUser, UpdatePassword, GetAccount}
