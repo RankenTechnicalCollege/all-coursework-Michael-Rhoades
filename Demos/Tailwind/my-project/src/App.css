@@ -1,0 +1,81 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+@theme {
+  --color-gold: #c8a028;
+
+  --font-display: "Inter", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+  --text-mini: 0.5rem;
+
+  --spacing-72: 18rem;
+
+  --radius-xl: 1rem;
+
+  --breakpoint-md: 800px;
+
+
+}
+
+/* @layer utilities {
+  .text-base {
+    font-size: 19px;
+    line-height: 2;
+  }
+} */
+
+@layer base {
+  body {
+    @apply bg-white dark:bg-slate-900 text-white
+  }
+  h1 {
+    @apply mb-2 text-3xl font-bold
+  }
+  h2 {
+    @apply mb-1 text-xl font-semibold
+  }
+  a {
+    @apply underline text-blue-500 hover:text-blue-800 transition decoration-wavy underline-offset-8
+  }
+  .btn {
+    @apply px-4 py-2 rounded-lg hover:duration-300 hover:delay-50 hover:transition hover:opacity-80 disabled:bg-slate-400/30 hover:disabled:opacity-100
+  }
+  .btn:hover {
+    @apply duration-300 delay-50 transition opacity-80
+  }
+  .btn-primary {
+    @apply bg-blue-600 text-white
+  }
+  .btn-secondary {
+    @apply bg-slate-800 text-white
+  }
+  input, select {
+    @apply p-1 mb-1 border border-slate-300 outline-none rounded-sm
+  }
+  input[type="text"] {
+    @apply placeholder:italic disabled:bg-slate-100
+  }
+  input[type="checkbox"] {
+    @apply p-2 accent-purple-500 mr-1 mb-0 mt-0.5
+  }
+  label {
+    @apply text-sm text-slate-700 font-medium leading-4
+  }
+  select {
+    @apply pr-8
+  }
+  .Select {
+    @apply inline-block border rounded cursor-pointer transition border-slate-300 outline-none w-32
+  }
+  .Select .child {
+    @apply px-2 py-1
+  }
+  .Select ul li {
+    @apply hover:bg-slate-100
+  }
+}
+
+@theme .dark {
+  --color-gold: #be961e; /* slightly deeper Vue green in dark mode */
+}
