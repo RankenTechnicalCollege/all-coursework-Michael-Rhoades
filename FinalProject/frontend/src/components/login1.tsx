@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
 
 interface Login1Props {
   heading?: string;
@@ -27,6 +29,17 @@ const Login1 = ({
   signupText = "Need an account?",
   signupUrl = "https://shadcnblocks.com",
 }: Login1Props) => {
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const {signIn} = authClient;
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("logging in with ", email, password)
+  }
+
   return (
     <section className="bg-muted h-screen">
       <div className="flex h-full items-center justify-center">
@@ -42,21 +55,30 @@ const Login1 = ({
           </a> */}
           <div className="min-w-sm border-muted bg-background flex w-full max-w-sm flex-col items-center gap-y-4 rounded-md border px-6 py-8 shadow-md">
             {heading && <h1 className="text-xl font-semibold">{heading}</h1>}
-            <Input
-              type="email"
-              placeholder="Email"
-              className="text-sm"
-              required
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              className="text-sm"
-              required
-            />
-            <Button type="submit" className="w-full">
-              {buttonText}
-            </Button>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border-red-200 rounded-md">
+                {error}
+              </div>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Email"
+                className="text-sm"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Input
+                id="password"
+                type="password"
+                placeholder="Password"
+                className="text-sm"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Button type="submit" className="w-full">
+                {buttonText}
+              </Button>
+            </form>
           </div>
           <div className="text-muted-foreground flex justify-center gap-1 text-sm">
             <p>{signupText}</p>
