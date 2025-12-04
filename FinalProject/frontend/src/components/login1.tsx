@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import loginSchema from "@/schemas/loginSchema";
 
 interface Login1Props {
   heading?: string;
@@ -32,12 +33,43 @@ const Login1 = ({
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const {signIn} = authClient;
+  const { signIn } = authClient;
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("logging in with ", email, password)
+
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      setError(result.error.issues[0].message);
+      return;
+    }
+
+    await signIn.email({
+      email,
+      password,
+    }, {
+      onSuccess: () => {
+        console.log("Login successful");
+        setError(null);
+      },
+      onError: () => {
+        setError("Invalid email or password");
+      }
+    });
+  }
+
+  const handleGoogleLogin = async () => {
+    try {
+      await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: "/",
+      });
+    } catch (error) {
+      console.error("Google login failed:", error);
+      setError("Google login failed. Please try again.");
+    }
   }
 
   return (
@@ -56,9 +88,11 @@ const Login1 = ({
           <div className="min-w-sm border-muted bg-background flex w-full max-w-sm flex-col items-center gap-y-4 rounded-md border px-6 py-8 shadow-md">
             {heading && <h1 className="text-xl font-semibold">{heading}</h1>}
             <form onSubmit={handleSubmit}>
-              <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border-red-200 rounded-md">
-                {error}
-              </div>
+              {error && (
+                <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border-red-200 rounded-md">
+                  {error}
+                </div>
+              )}
               <Input
                 id="email"
                 type="email"
@@ -78,6 +112,7 @@ const Login1 = ({
               <Button type="submit" className="w-full">
                 {buttonText}
               </Button>
+              <Button variant="outline" type="button" onClick={handleGoogleLogin}>Login with Google</Button>
             </form>
           </div>
           <div className="text-muted-foreground flex justify-center gap-1 text-sm">

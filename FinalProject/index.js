@@ -9,7 +9,11 @@ import { toNodeHandler } from 'better-auth/node';
 
 import { userRouter } from './routes/api/user.js';
 import { bugRouter } from './routes/api/bug.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -21,12 +25,18 @@ app.use(cors(
     credentials: true
   }
 ));
-app.use(express.static('IssueTracker/dist'));
+app.use(express.static('frontend/dist'));
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use('/api/users', userRouter);
 app.use('/api/bugs', bugRouter);
 const port = process.env.PORT || 3000;
+
+// Handle React routing - send all non-API requests to React
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
+});
+
 
 app.listen(port,() => {
   debugServer(`Server is now running on port http://localhost:${port}`);

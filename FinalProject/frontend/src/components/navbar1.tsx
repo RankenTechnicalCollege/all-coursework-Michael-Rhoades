@@ -1,4 +1,4 @@
-import { Book, Menu, Sunset, Trees, Zap } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import {
   Accordion,
@@ -23,12 +23,33 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
+import { useNavigate, Link } from "react-router-dom";
+import { authClient } from "@/lib/auth-client";
+import type { Session } from "better-auth/types"
+
+interface ExtendedUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string[];
+  image?: string;
+  emailVerified?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface ExtendedSession extends Omit<Session, 'user'> {
+  user: ExtendedUser;
+}
+
+
 interface MenuItem {
   title: string;
   url: string;
   description?: string;
   icon?: React.ReactNode;
   items?: MenuItem[];
+  requiredRole?: string | string[];
 }
 
 interface Navbar1Props {
@@ -59,82 +80,56 @@ const Navbar1 = ({
     title: "Shadcnblocks.com",
   },
   menu = [
-    { title: "Home", url: "#" },
     {
-      title: "Products",
-      url: "#",
-      items: [
-        {
-          title: "Blog",
-          description: "The latest industry news, updates, and info",
-          icon: <Book className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Company",
-          description: "Our mission is to innovate and empower the world",
-          icon: <Trees className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Careers",
-          description: "Browse job listing and discover our workspace",
-          icon: <Sunset className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Support",
-          description:
-            "Get in touch with our support team or visit our community forums",
-          icon: <Zap className="size-5 shrink-0" />,
-          url: "#",
-        },
-      ],
+      title: "Home",
+      url: "/",
     },
     {
-      title: "Resources",
-      url: "#",
-      items: [
-        {
-          title: "Help Center",
-          description: "Get all the answers you need right here",
-          icon: <Zap className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Contact Us",
-          description: "We are here to help you with any questions you have",
-          icon: <Sunset className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Status",
-          description: "Check the current status of our services and APIs",
-          icon: <Trees className="size-5 shrink-0" />,
-          url: "#",
-        },
-        {
-          title: "Terms of Service",
-          description: "Our terms and conditions for using our services",
-          icon: <Book className="size-5 shrink-0" />,
-          url: "#",
-        },
-      ],
+      title: "User List",
+      url: "/user-list",
+      requiredRole: "admin",
     },
     {
-      title: "Pricing",
-      url: "#",
+      title: "Bug List",
+      url: "/bug-list",
+      requiredRole: ["admin", "developer"],
     },
     {
-      title: "Blog",
-      url: "#",
+      title: "Add Bug",
+      url: "/create-bug",
+      requiredRole: ["admin", "developer"],
     },
   ],
   auth = {
-    login: { title: "Login", url: "#" },
-    signup: { title: "Sign up", url: "#" },
+    login: { title: "Login", url: "/login" },
+    signup: { title: "Sign up", url: "/sign-up" },
   },
 }: Navbar1Props) => {
+
+  const { data: session, isPending } = authClient.useSession();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await authClient.signOut();
+    navigate("/");
+  }
+
+  const extendedSession = session as ExtendedSession | null;
+
+  const hasRole = (requiredRole?: string | string[]) => {
+    if (!requiredRole || !extendedSession?.user.role) return true;
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    return roles.some(role => extendedSession.user.role.includes(role)); 
+  }
+
+  const filteredMenu = menu.filter((item) => {
+    if (!extendedSession && item.requiredRole) return false;
+    return hasRole(item.requiredRole);
+  })
+
+  console.log("Session data: ", session);
+  console.log("Extended Session data: ", extendedSession);
+
   return (
     <section className="py-4">
       <div className="container">
@@ -142,7 +137,7 @@ const Navbar1 = ({
         <nav className="hidden items-center justify-between lg:flex">
           <div className="flex items-center gap-6">
             {/* Logo */}
-            <a href={logo.url} className="flex items-center gap-2">
+            <Link to={logo.url} className="flex items-center gap-2">
               <img
                 src={logo.src}
                 className="max-h-8 dark:invert"
@@ -151,22 +146,37 @@ const Navbar1 = ({
               <span className="text-lg font-semibold tracking-tighter">
                 {logo.title}
               </span>
-            </a>
+            </Link>
             <div className="flex items-center">
               <NavigationMenu>
                 <NavigationMenuList>
-                  {menu.map((item) => renderMenuItem(item))}
+                  {filteredMenu.map((item) => renderMenuItem(item, extendedSession))}
                 </NavigationMenuList>
               </NavigationMenu>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <a href={auth.login.url}>{auth.login.title}</a>
-            </Button>
-            <Button asChild size="sm">
-              <a href={auth.signup.url}>{auth.signup.title}</a>
-            </Button>
+          <div className="flex items-center gap-3">
+            {isPending ? (
+              <span className="text-sm">Loading...</span>
+            ) : extendedSession ? (
+              <>
+                <span className="text-sm font-medium">
+                  Welcome, {extendedSession.user.name || extendedSession.user.email}
+                </span>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild variant="outline" size="sm">
+                  <Link to={auth.login.url}>{auth.login.title}</Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link to={auth.signup.url}>{auth.signup.title}</Link>
+                </Button>
+              </>
+            )}
           </div>
         </nav>
 
@@ -174,13 +184,13 @@ const Navbar1 = ({
         <div className="block lg:hidden">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <a href={logo.url} className="flex items-center gap-2">
+            <Link to={logo.url} className="flex items-center gap-2">
               <img
                 src={logo.src}
                 className="max-h-8 dark:invert"
                 alt={logo.alt}
               />
-            </a>
+            </Link>
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -190,13 +200,13 @@ const Navbar1 = ({
               <SheetContent className="overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>
-                    <a href={logo.url} className="flex items-center gap-2">
+                    <Link to={logo.url} className="flex items-center gap-2">
                       <img
                         src={logo.src}
                         className="max-h-8 dark:invert"
                         alt={logo.alt}
                       />
-                    </a>
+                    </Link>
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-6 p-4">
@@ -209,12 +219,32 @@ const Navbar1 = ({
                   </Accordion>
 
                   <div className="flex flex-col gap-3">
-                    <Button asChild variant="outline">
-                      <a href={auth.login.url}>{auth.login.title}</a>
-                    </Button>
-                    <Button asChild>
-                      <a href={auth.signup.url}>{auth.signup.title}</a>
-                    </Button>
+                    {isPending ? (
+                      <span className="text-sm">Loading...</span>
+                    ) : extendedSession ? (
+                      <>
+                        <div className="border-b pb-3">
+                          <p className="text-sm font-medium">
+                            {extendedSession.user.name || extendedSession.user.email}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {extendedSession.user.email}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={handleSignOut}>
+                          Sign Out
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={auth.login.url}>{auth.login.title}</Link>
+                        </Button>
+                        <Button asChild size="sm">
+                          <Link to={auth.signup.url}>{auth.signup.title}</Link>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </SheetContent>
@@ -226,13 +256,22 @@ const Navbar1 = ({
   );
 };
 
-const renderMenuItem = (item: MenuItem) => {
+const renderMenuItem = (item: MenuItem, session: ExtendedSession) => {
   if (item.items) {
+    const filteredSubItems = item.items.filter((subItem) => {
+      if (!session && subItem.requiredRole) return false;
+      if (!subItem.requiredRole) return true;
+      const roles = Array.isArray(subItem.requiredRole) ? subItem.requiredRole : [subItem.requiredRole];
+      return roles.some((role) => session?.user?.role?.includes(role));
+    });
+    if (filteredSubItems.length === 0) {
+      return null;
+    }
     return (
       <NavigationMenuItem key={item.title}>
         <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
         <NavigationMenuContent className="bg-popover text-popover-foreground">
-          {item.items.map((subItem) => (
+          {filteredSubItems.map((subItem) => (
             <NavigationMenuLink asChild key={subItem.title} className="w-80">
               <SubMenuLink item={subItem} />
             </NavigationMenuLink>
@@ -271,17 +310,17 @@ const renderMobileMenuItem = (item: MenuItem) => {
   }
 
   return (
-    <a key={item.title} href={item.url} className="text-md font-semibold">
+    <Link key={item.title} to={item.url} className="text-md font-semibold">
       {item.title}
-    </a>
+    </Link>
   );
 };
 
 const SubMenuLink = ({ item }: { item: MenuItem }) => {
   return (
-    <a
+    <Link
       className="hover:bg-muted hover:text-accent-foreground flex min-w-80 select-none flex-row gap-4 rounded-md p-3 leading-none no-underline outline-none transition-colors"
-      href={item.url}
+      to={item.url}
     >
       <div className="text-foreground">{item.icon}</div>
       <div>
@@ -292,7 +331,7 @@ const SubMenuLink = ({ item }: { item: MenuItem }) => {
           </p>
         )}
       </div>
-    </a>
+    </Link>
   );
 };
 
