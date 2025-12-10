@@ -25,7 +25,7 @@ const Signup1 = ({
   // },
   buttonText = "Create Account",
   signupText = "Already a user?",
-  signupUrl = "https://shadcnblocks.com",
+  signupUrl = "/login",
 }: Signup1Props) => {
   return (
     <section className="bg-muted h-screen">

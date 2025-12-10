@@ -54,9 +54,9 @@ async function Login(email, password) {
   return await db.collection("user").findOne({email: email, password: password});
 }
 
-async function UpdateUser(id, fullName, givenName, familyName, role) {
+async function UpdateUser(id, fullName, role) {
   const db = await connectToDatabase();
-  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {fullName: fullName, givenName: givenName, familyName: familyName, role: role, updatedAt: new Date(Date.now())}});
+  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {fullName: fullName, role: role, updatedAt: new Date(Date.now())}});
 }
 
 async function DeleteUser(id) {

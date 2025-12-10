@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import loginSchema from "@/schemas/loginSchema";
+import { useNavigate } from "react-router-dom";
 
 interface Login1Props {
   heading?: string;
@@ -28,17 +29,20 @@ const Login1 = ({
   // },
   buttonText = "Login",
   signupText = "Need an account?",
-  signupUrl = "https://shadcnblocks.com",
+  signupUrl = "/sign-up",
 }: Login1Props) => {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const { signIn } = authClient;
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("logging in with ", email, password)
+
+    
 
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
@@ -53,6 +57,7 @@ const Login1 = ({
       onSuccess: () => {
         console.log("Login successful");
         setError(null);
+        navigate("/");
       },
       onError: () => {
         setError("Invalid email or password");

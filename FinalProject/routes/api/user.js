@@ -149,8 +149,6 @@ router.patch("/:userId", isAuthenticated, hasPermission("canEditAnyUser"), valid
   //   password = oldUser.password;
   // }
   const fullName = userToUpdate.fullName ? userToUpdate.fullName : oldUser.fullName;
-  const givenName = userToUpdate.givenName ? userToUpdate.givenName : oldUser.givenName;
-  const familyName = userToUpdate.familyName ? userToUpdate.familyName : oldUser.familyName;
   let role;
   if (id == authorId || userToUpdate.role == oldUser.role || !userToUpdate.role) {
     role = oldUser.role;
@@ -159,7 +157,7 @@ router.patch("/:userId", isAuthenticated, hasPermission("canEditAnyUser"), valid
     role = userToUpdate.role;
   }
 
-  const updatedUser = await UpdateUser(id,fullName,givenName,familyName,role);
+  const updatedUser = await UpdateUser(id,fullName,role);
   if (updatedUser.modifiedCount === 0) {
     res.status(404).json({message: 'User not found'});
     return;

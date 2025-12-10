@@ -86,12 +86,12 @@ const Navbar1 = ({
     },
     {
       title: "User List",
-      url: "/user-list",
-      requiredRole: "admin",
+      url: "/user/list",
+      requiredRole: ["developer", "business analyst", "quality analyst", "product manager", "technical manager", "admin", "no-permissions"],
     },
     {
       title: "Bug List",
-      url: "/bug-list",
+      url: "/bug/list",
       requiredRole: ["admin", "developer"],
     },
     {
@@ -117,15 +117,15 @@ const Navbar1 = ({
   const extendedSession = session as ExtendedSession | null;
 
   const hasRole = (requiredRole?: string | string[]) => {
-    if (!requiredRole || !extendedSession?.user.role) return true;
+    if (!requiredRole || !extendedSession?.user?.role) return true;
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    return roles.some(role => extendedSession.user.role.includes(role)); 
-  }
+    return roles.some((role) => extendedSession.user.role.includes(role));
+  };
 
   const filteredMenu = menu.filter((item) => {
     if (!extendedSession && item.requiredRole) return false;
     return hasRole(item.requiredRole);
-  })
+  });
 
   console.log("Session data: ", session);
   console.log("Extended Session data: ", extendedSession);
@@ -215,7 +215,7 @@ const Navbar1 = ({
                     collapsible
                     className="flex w-full flex-col gap-4"
                   >
-                    {menu.map((item) => renderMobileMenuItem(item))}
+                    {filteredMenu.map((item) => renderMobileMenuItem(item, extendedSession))}
                   </Accordion>
 
                   <div className="flex flex-col gap-3">
@@ -256,7 +256,7 @@ const Navbar1 = ({
   );
 };
 
-const renderMenuItem = (item: MenuItem, session: ExtendedSession) => {
+const renderMenuItem = (item: MenuItem, session: ExtendedSession | null) => {
   if (item.items) {
     const filteredSubItems = item.items.filter((subItem) => {
       if (!session && subItem.requiredRole) return false;
@@ -293,15 +293,25 @@ const renderMenuItem = (item: MenuItem, session: ExtendedSession) => {
   );
 };
 
-const renderMobileMenuItem = (item: MenuItem) => {
+const renderMobileMenuItem = (item: MenuItem, session: ExtendedSession | null) => {
   if (item.items) {
+    // Filter sub-items based on role
+    const filteredSubItems = item.items.filter((subItem) => {
+      if (!session && subItem.requiredRole) return false;
+      if (!subItem.requiredRole) return true;
+      const roles = Array.isArray(subItem.requiredRole) ? subItem.requiredRole : [subItem.requiredRole];
+      return roles.some((role) => session?.user?.role?.includes(role));
+    });
+
+    if (filteredSubItems.length === 0) return null;
+
     return (
       <AccordionItem key={item.title} value={item.title} className="border-b-0">
         <AccordionTrigger className="text-md py-0 font-semibold hover:no-underline">
           {item.title}
         </AccordionTrigger>
         <AccordionContent className="mt-2">
-          {item.items.map((subItem) => (
+          {filteredSubItems.map((subItem) => (
             <SubMenuLink key={subItem.title} item={subItem} />
           ))}
         </AccordionContent>
@@ -310,9 +320,9 @@ const renderMobileMenuItem = (item: MenuItem) => {
   }
 
   return (
-    <Link key={item.title} to={item.url} className="text-md font-semibold">
+    <a key={item.title} href={item.url} className="text-md font-semibold">
       {item.title}
-    </Link>
+    </a>
   );
 };
 
