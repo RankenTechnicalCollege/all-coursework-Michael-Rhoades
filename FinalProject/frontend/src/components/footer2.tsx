@@ -28,10 +28,10 @@ const Footer2 = ({
   logo = {
     src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/block-1.svg",
     alt: "blocks for shadcn/ui",
-    title: "Shadcnblocks.com",
+    title: "IssueTracker",
     url: "https://www.shadcnblocks.com",
   },
-  tagline = "Components made easy.",
+  tagline = "Michael Rhoades 2025.",
   menuItems = [
     {
       title: "Product",

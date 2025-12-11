@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { z } from "zod";
 import bugEditSchema from "@/schemas/bugEditSchema";
 
@@ -23,7 +22,7 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    stepsToReproduce: [] as string[],
+    stepsToReproduce: "",
   });
 
   useEffect(() => {
@@ -34,7 +33,7 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
         setFormData({
           title: response.data?.title || "",
           description: response.data?.description || "",
-          stepsToReproduce: response.data.stepsToReproduce || [],
+          stepsToReproduce: response.data.stepsToReproduce || "",
         })
         setLoading(false);
       }
@@ -50,15 +49,6 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleRoleChange = (role: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      role: checked
-        ? [...prev.role, role]
-        : prev.role.filter((r) => r !== role),
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,14 +120,12 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
     );
   }
 
-  const availableRoles = ["developer", "business analyst", "quality analyst", "product manager", "technical manager", "admin"];
-
   return (
     <div className="container mx-auto p-6 max-w-2xl">
       <Card>
         <CardHeader>
           <CardTitle>Edit Bug</CardTitle>
-          <CardDescription>Update bug information and permissions</CardDescription>
+          <CardDescription>Update bug information</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -148,58 +136,47 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="title">Title</Label>
               <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
-              {validationErrors.email && (
-                <p className="text-sm text-red-500">{validationErrors.email}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                name="fullName"
+                id="title"
+                name="title"
                 type="text"
-                value={formData.fullName}
+                value={formData.title}
                 onChange={handleInputChange}
               />
-              {validationErrors.fullName && (
-                <p className="text-sm text-red-500">{validationErrors.fullName}</p>
+              {validationErrors.title && (
+                <p className="text-sm text-red-500">{validationErrors.title}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label>Roles</Label>
-              <div className="space-y-2">
-                {availableRoles.map((role) => (
-                  <div key={role} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`role-${role}`}
-                      checked={formData.role.includes(role)}
-                      onCheckedChange={(checked) =>
-                        handleRoleChange(role, checked as boolean)
-                      }
-                    />
-                    <Label
-                      htmlFor={`role-${role}`}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {role.charAt(0).toUpperCase() + role.slice(1)}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              {validationErrors.role && (
-                <p className="text-sm text-red-500">{validationErrors.role}</p>
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                name="description"
+                type="text"
+                value={formData.description}
+                onChange={handleInputChange}
+              />
+              {validationErrors.description && (
+                <p className="text-sm text-red-500">{validationErrors.description}</p>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stepsToReproduce">Steps to Reproduce</Label>
+              <Input
+                id="stepsToReproduce"
+                name="stepsToReproduce"
+                type="text"
+                value={formData.stepsToReproduce}
+                onChange={handleInputChange}
+              />
+              {validationErrors.stepsToReproduce && (
+                <p className="text-sm text-red-500">{validationErrors.stepsToReproduce}</p>
+              )}
+            </div>
+
           </CardContent>
 
           <CardFooter className="flex gap-2">

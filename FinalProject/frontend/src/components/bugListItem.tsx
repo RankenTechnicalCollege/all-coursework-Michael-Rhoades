@@ -22,7 +22,7 @@ const BugListItem = ({ bug }: { bug: Bug }) => {
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => navigate(`/bugs/${bug._id}/edit`)}
+          onClick={() => navigate(`/bug/${bug._id}/edit`)}
         >
           <Pencil className="h-4 w-4" />
         </Button>

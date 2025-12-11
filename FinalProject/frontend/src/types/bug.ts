@@ -38,7 +38,7 @@ export interface BaseBug {
   _id: string;
   title: string;
   description: string;
-  stepsToReproduce: string[];
+  stepsToReproduce: string;
   authorOfBug?: string;
   createdOn?: Date;
   updatedOn?: Date;

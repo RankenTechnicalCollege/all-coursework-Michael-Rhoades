@@ -1,40 +1,40 @@
 import './App.css'
 import { Routes, Route } from 'react-router-dom' // , Navigate, useNavigate
-// import { ToastContainer, toast } from 'react-toastify' // 
-// import 'react-toastify/dist/ReactToastify.min.css'
+import { ToastContainer, toast } from 'react-toastify' // 
+import 'react-toastify/dist/ReactToastify.css';
 // import { useState } from 'react'
 import { Login1 } from '@/components/login1'
 import { Signup1 } from '@/components/signup1'
 import { UserList } from '@/components/userList'
 import { BugList } from '@/components/bugList'
-// import { BugEdit } from '@/components/bugEdit'
 import { UserEdit } from '@/components/userEdit'
 // import { Button } from '@/components/ui/button'
 // import { authClient } from '@/lib/auth-client'
 import AppLayout from '@/components/layouts/app-layout'
 import { LandingPage } from '@/components/landing-page'
+import { BugEdit } from '@/components/bugEdit'
 
 function App() {
 
-  // function showError(message: string) {
-  //   toast(message, { type: 'error' , position: 'bottom-right'});
-  // }
-
-  // function showSuccess(message: string) {
-  //   toast(message, { type: 'success' , position: 'bottom-right'});
-  // }
-
   function showError(message: string) {
-    console.log(message);
+    toast(message, { type: 'error' , position: 'bottom-right'});
   }
 
   function showSuccess(message: string) {
-    console.log(message);
+    toast(message, { type: 'success' , position: 'bottom-right'});
   }
+
+  // function showError(message: string) {
+  //   console.log(message);
+  // }
+
+  // function showSuccess(message: string) {
+  //   console.log(message);
+  // }
 
   return (
     <>
-      {/* <ToastContainer aria-label='toast container'/> */}
+      <ToastContainer aria-label='toast container'/>
         <Routes>
           <Route path='/' element={<AppLayout />}>
             <Route index element={<LandingPage />} />
@@ -43,7 +43,7 @@ function App() {
             <Route path='/user/list' element={<UserList />} />
             <Route path='/user/:userId/edit' element={<UserEdit showError={showError} showSuccess={showSuccess} />} />
             <Route path='/bug/list' element={<BugList />} />
-            {/* <Route path='/bug/:bugId/edit' element={<BugEdit heading = "Edit Bug" bug = {{id: "user-1",email: "michaeltrhoades42@gmail.com",password:"123456789",fullName: "Michael Rhoades",role: "admin",}}/>} />    showError={showError} showSuccess={showSuccess} */}
+            <Route path='/bug/:bugId/edit' element={<BugEdit showError={showError} showSuccess={showSuccess} />} />
 
           </Route>
         </Routes>
