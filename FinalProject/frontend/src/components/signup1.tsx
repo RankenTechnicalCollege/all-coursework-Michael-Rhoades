@@ -27,55 +27,94 @@ const Signup1 = ({
   //   alt: "logo",
   //   title: "shadcnblocks.com",
   // },
-  buttonText = "Log in",
-  signupText = "Already have an account?",
+  buttonText = "Create Account",
+  signupText = "Already a user?",
   signupUrl = "/login",
 }: Signup1Props) => {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const { signIn } = authClient;
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [role, setRole] = useState([""])
+  const { signUp } = authClient;
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Signing up with ", email, password)
+    setRole(["developer"])
+    console.log("signing up with ", email, password, confirmPassword, fullName, role)
 
     
 
-    const result = signupSchema.safeParse({ email, password });
+    const result = signupSchema.safeParse({ email, password, confirmPassword, fullName, role });
     if (!result.success) {
       setError(result.error.issues[0].message);
       return;
     }
 
-    await signIn.email({
+    await signUp.email({
       email,
       password,
-    }, {
-      onSuccess: () => {
-        console.log("Signup successful");
-        setError(null);
-        navigate("/");
-      },
-      onError: () => {
-        setError("Invalid email or password");
+      name: fullName,
+    },
+    {
+          onRequest: (ctx) => {
+            // Parse the body if it's a string, otherwise use as-is
+            const bodyData =
+              typeof ctx.body === "string"
+                ? JSON.parse(ctx.body)
+                : ctx.body;
+
+            // Add custom fields
+            const updatedBody = {
+              ...bodyData,
+              role: ["developer"],
+            };
+
+            // Stringify the body back
+            ctx.body = JSON.stringify(updatedBody);
+
+            // Return the full context
+            return ctx;
+          },
+        }, 
+    //     {
+    //   onSuccess: () => {
+    //     console.log("Signup successful");
+    //     setError(null);
+    //     navigate("/");
+    //   },
+    //   onError: () => {
+    //     console.log(email, password, fullName);
+    //     setError("Invalid email or password");
+    //   }
+    // }
+  );
+    if (error) {
+        throw new Error(error || "Registration failed");
       }
-    });
+
+      console.log("Registration successful:", result);
+
+      // Better Auth automatically sets session cookies
+      // Redirect to home page after successful registration
+      navigate("/");
+
   }
 
-  const handleGoogleSignup = async () => {
-    try {
-      await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: "/",
-      });
-    } catch (error) {
-      console.error("Google signup failed:", error);
-      setError("Google signup failed. Please try again.");
-    }
-  }
+  // const handleGoogleLogin = async () => {
+  //   try {
+  //     await authClient.signUp.social({
+  //       provider: 'google',
+  //       callbackURL: "/",
+  //     });
+  //   } catch (error) {
+  //     console.error("Google login failed:", error);
+  //     setError("Google login failed. Please try again.");
+  //   }
+  // }
 
   return (
     <section className="bg-muted h-screen">
@@ -114,10 +153,26 @@ const Signup1 = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm Password"
+                className="text-sm"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Full Name"
+                className="text-sm"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
               <Button type="submit" className="w-full">
                 {buttonText}
               </Button>
-              <Button variant="outline" type="button" onClick={handleGoogleSignup}>Signup with Google</Button>
+              {/* <Button variant="outline" type="button" onClick={handleGoogleLogin}>Login with Google</Button> */}
             </form>
           </div>
           <div className="text-muted-foreground flex justify-center gap-1 text-sm">
@@ -126,7 +181,7 @@ const Signup1 = ({
               href={signupUrl}
               className="text-primary font-medium hover:underline"
             >
-              Sign up
+              Login
             </a>
           </div>
         </div>

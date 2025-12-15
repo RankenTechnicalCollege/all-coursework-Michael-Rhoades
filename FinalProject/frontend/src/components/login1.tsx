@@ -65,17 +65,17 @@ const Login1 = ({
     });
   }
 
-  const handleGoogleLogin = async () => {
-    try {
-      await authClient.signIn.social({
-        provider: 'google',
-        callbackURL: "/",
-      });
-    } catch (error) {
-      console.error("Google login failed:", error);
-      setError("Google login failed. Please try again.");
-    }
-  }
+  // const handleGoogleLogin = async () => {
+  //   try {
+  //     await authClient.signIn.social({
+  //       provider: 'google',
+  //       callbackURL: "/",
+  //     });
+  //   } catch (error) {
+  //     console.error("Google login failed:", error);
+  //     setError("Google login failed. Please try again.");
+  //   }
+  // }
 
   return (
     <section className="bg-muted h-screen">
@@ -117,7 +117,7 @@ const Login1 = ({
               <Button type="submit" className="w-full">
                 {buttonText}
               </Button>
-              <Button variant="outline" type="button" onClick={handleGoogleLogin}>Login with Google</Button>
+              {/* <Button variant="outline" type="button" onClick={handleGoogleLogin}>Login with Google</Button> */}
             </form>
           </div>
           <div className="text-muted-foreground flex justify-center gap-1 text-sm">
