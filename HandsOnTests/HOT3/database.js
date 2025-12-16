@@ -60,9 +60,9 @@ async function GetUserById(id) {
   return await db.collection("user").findOne({_id: new ObjectId(id)});
 }
 
-async function UpdateUser(id, fullName, email) {
+async function UpdateUser(id, fullName, email, role) {
   const db = await connectToDatabase();
-  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {fullName: fullName, email: email, updatedAt: new Date(Date.now())}});
+  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {fullName: fullName, email: email, role: role, updatedAt: new Date(Date.now())}});
 }
 
 async function UpdatePassword(id, password) {
