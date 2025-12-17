@@ -13,6 +13,8 @@ import { UserEdit } from '@/components/userEdit'
 import AppLayout from '@/components/layouts/app-layout'
 import { LandingPage } from '@/components/landing-page'
 import { BugEdit } from '@/components/bugEdit'
+import { BugCreate } from './components/bugCreate';
+import { BugCommentAdd } from './components/bugCommentAdd';
 
 function App() {
 
@@ -43,8 +45,9 @@ function App() {
             <Route path='/user/list' element={<UserList />} />
             <Route path='/user/:userId/edit' element={<UserEdit showError={showError} showSuccess={showSuccess} />} />
             <Route path='/bug/list' element={<BugList />} />
+            <Route path='/bug/report' element={<BugCreate showError={showError} showSuccess={showSuccess} />} />
             <Route path='/bug/:bugId/edit' element={<BugEdit showError={showError} showSuccess={showSuccess} />} />
-
+            <Route path='/bug/:bugId/comments' element={<BugCommentAdd showError={showError} showSuccess={showSuccess} />} />
           </Route>
         </Routes>
       

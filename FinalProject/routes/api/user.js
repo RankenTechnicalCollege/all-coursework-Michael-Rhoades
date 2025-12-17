@@ -18,49 +18,97 @@ import { hasPermission, hasAnyPermission } from '../../Middleware/hasPermissions
 
 
 
-router.get("", isAuthenticated, hasPermission("canViewData"), validId('userId'), async (req, res) => {
-  const params = req.query;
+// router.get("", isAuthenticated, validId('userId'), async (req, res) => {   // , hasPermission("canViewData")
+//   const params = req.query;
 
-  const pageNumber = parseInt(params.pageNumber) || 1;
-  const pageSize = parseInt(params.pageSize) || 5;
-  const skip = (pageNumber - 1) * pageSize;
+//   const pageNumber = parseInt(params.pageNumber) || 1;
+//   const pageSize = parseInt(params.pageSize) || 5;
+//   const skip = (pageNumber - 1) * pageSize;
+
+//   const filter = {};
+
+//   if (params.keywords) filter.$text = {$search: params.keywords};
+//   if (params.role) filter.role = params.role;
+
+//   if (params.maxAge || params.minAge) {
+//     const today = new Date();
+//     today.setHours(0,0,0,0);
+//     const dateFilter = {};
+
+//     if (params.maxAge) dateFilter.$gte = new Date(today.getTime() - (params.maxAge * 86400000));
+//     if (params.minAge) dateFilter.$lte = new Date(today.getTime() - (params.minAge * 86400000));
+
+//     filter.joined = dateFilter;
+//   }
+
+//   const sortOptions = {
+//     givenName: {givenName: 1, familyName: 1, joined: 1},
+//     familyName: {familyName: 1, givenName: 1, joined: 1},
+//     role: {role: 1, givenName: 1, familyName: 1, joined: 1},
+//     newest: {joined: -1},
+//     oldest: {joined: 1}
+//   }
+
+//   const sortBy = sortOptions[params.sortBy] || sortOptions.givenName;
+
+//   const users = await GetUsers(filter, pageSize, skip, sortBy);
+//   if (!users) {
+//     res.status(404).json({message: 'Users not found'});
+//     return;
+//   }
+//   else {
+//     res.status(200).json(users);
+//     return;
+//   }
+// });
+
+router.get('', async (req, res) => {
+  const {keywords, role, minAge, maxAge, page, limit, sortBy} = req.query;
+
+  const pageNum = parseInt(page) || 1;
+  const limitNum = parseInt(limit) || 0;
+  const skip = limitNum > 0 ? (pageNum - 1) * limitNum : 0;
 
   const filter = {};
 
-  if (params.keywords) filter.$text = {$search: params.keywords};
-  if (params.role) filter.role = params.role;
+  if(keywords) filter.$text = {$search: keywords};
 
-  if (params.maxAge || params.minAge) {
+  if(role) filter.role = role;
+
+  if(minAge || maxAge) {
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
+
     const dateFilter = {};
 
-    if (params.maxAge) dateFilter.$gte = new Date(today.getTime() - (params.maxAge * 86400000));
-    if (params.minAge) dateFilter.$lte = new Date(today.getTime() - (params.minAge * 86400000));
+    if(maxAge) dateFilter.$gte = new Date(today.getTime() - maxAge * 24 * 60 * 60 * 1000); //Records must be newer than maxAge days
+    if(minAge) dateFilter.$lte = new Date(today.getTime() - minAge * 24 * 60 * 60 * 1000); //Records must be older than minAge days
 
-    filter.joined = dateFilter;
+    filter.createdAt = dateFilter;
   }
 
   const sortOptions = {
-    givenName: {givenName: 1, familyName: 1, joined: 1},
-    familyName: {familyName: 1, givenName: 1, joined: 1},
-    role: {role: 1, givenName: 1, familyName: 1, joined: 1},
-    newest: {joined: -1},
-    oldest: {joined: 1}
-  }
+     email: { email: 1 },
+     createdAt: { createdAt: 1 },
+     role: { role: 1 },
+     name: { name: 1 },
+    newest: { createdAt: -1 },
+    oldest: { createdAt: 1 }
+  };
+  const sort = sortOptions[sortBy] || {role:-1};
+ 
+  
 
-  const sortBy = sortOptions[params.sortBy] || sortOptions.givenName;
+  // debugUsers(`Sort is ${JSON.stringify(sort)}`);
 
-  const users = await GetUsers(filter, pageSize, skip, sortBy);
+  const users = await GetUsers(filter, sort, limitNum, skip); 
   if (!users) {
-    res.status(404).json({message: 'Users not found'});
-    return;
-  }
-  else {
+    res.status(500).send('Error retrieving users');
+  }else{
     res.status(200).json(users);
-    return;
   }
 });
+
 
 router.get("/me", isAuthenticated, async (req, res) => {
   const session = req.session;

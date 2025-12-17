@@ -96,9 +96,9 @@ async function AssignBug(id, assignedToUserId, assignedToUserName, assignedBy) {
   return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {assignedToUserId: assignedToUserId, assignedToUserName: assignedToUserName, assignedOn: new Date(Date.now()), assignedBy: assignedBy, lastUpdated: new Date(Date.now())}});
 }
 
-async function CloseBug(id, closedBy) {
+async function CloseBug(id, closed, closedBy) {
   const db = await connectToDatabase();
-  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {closed: true, closedBy: closedBy, closedOn: new Date(Date.now()), lastUpdated: new Date(Date.now())}});
+  return await db.collection("bugs").updateOne({_id: new ObjectId(id)},{$set: {closed: closed, closedBy: closedBy, closedOn: new Date(Date.now()), lastUpdated: new Date(Date.now())}});
 }
 
 
@@ -179,19 +179,49 @@ async function DeleteTestCase(bugId, testCaseId) {
 //   return await db.collection("users").aggregate(query).toArray();
 // }
 
-async function GetUsers(filter, limit, skip, sort) {
+// async function GetUsers(filter, limit, skip, sort) {
+//   const db = await connectToDatabase();
+//   return await db.collection("user").find(filter).sort(sort).skip(skip).limit(limit).toArray();
+// }
+async function GetUsers(filter, sort, limit=0, skip = 0){
   const db = await connectToDatabase();
-  return await db.collection("user").find(filter).sort(sort).skip(skip).limit(limit).toArray();
+ // debugDb(`Filter: ${JSON.stringify(filter)}`);
+  let query =  db.collection('user').find(filter).sort(sort);
+  
+  if (skip > 0) {
+    query = query.skip(skip);
+  }
+  
+  if (limit > 0) {
+    query = query.limit(limit);
+  }
+  return query.toArray();
 }
 
-async function GetBugs(filter, limit, skip, sort) {
-  const db = await connectToDatabase();
-  return await db.collection("bugs").find(filter).sort(sort).skip(skip).limit(limit).toArray();
-}
+
+// async function GetBugs(filter, limit, skip, sort) {
+//   const db = await connectToDatabase();
+//   return await db.collection("bugs").find(filter).sort(sort).skip(skip).limit(limit).toArray();
+// }
 
 
 
 // General gets
+
+async function GetBugs(filter, sort, limit=0, skip = 0){
+  const db = await connectToDatabase();
+ // debugDb(`Filter: ${JSON.stringify(filter)}`);
+  let query =  db.collection('bugs').find(filter).sort(sort);
+  
+  if (skip > 0) {
+    query = query.skip(skip);
+  }
+  
+  if (limit > 0) {
+    query = query.limit(limit);
+  }
+  return query.toArray();
+}
 
 async function getClient() {
   if (!_client) {

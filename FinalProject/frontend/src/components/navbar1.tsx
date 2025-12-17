@@ -74,10 +74,10 @@ interface Navbar1Props {
 
 const Navbar1 = ({
   logo = {
-    url: "https://www.shadcnblocks.com",
+    url: "#",
     src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/logos/shadcnblockscom-icon.svg",
     alt: "logo",
-    title: "Shadcnblocks.com",
+    title: "IssueTracker",
   },
   menu = [
     {
@@ -96,7 +96,7 @@ const Navbar1 = ({
     },
     {
       title: "Add Bug",
-      url: "/create-bug",
+      url: "/bug/report",
       requiredRole: ["admin", "developer"],
     },
   ],

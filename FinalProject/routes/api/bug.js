@@ -26,50 +26,99 @@ function genId() {
     return id;
 }
 
-router.get('', isAuthenticated, hasPermission("canViewData"), async (req, res) => {
-  const params = req.query;
+// router.get('', isAuthenticated, hasPermission("canViewData"), async (req, res) => {
+//   const params = req.query;
 
-  const pageNumber = parseInt(params.pageNumber) || 1;
-  const pageSize = parseInt(params.pageSize) || 5;
-  const skip = (pageNumber - 1) * pageSize;
+//   const pageNumber = parseInt(params.pageNumber) || 1;
+//   const pageSize = parseInt(params.pageSize) || 5;
+//   const skip = (pageNumber - 1) * pageSize;
+
+//   const filter = {};
+
+//   if (params.keywords) filter.$text = {$search: params.keywords};
+//   if (params.classification) filter.classification = params.classification;
+//   if (params.closed == "true") filter.closed = true;
+//   if (params.closed == "false") filter.closed = false;
+
+//   if (params.maxAge || params.minAge) {
+//     const today = new Date();
+//     today.setHours(0,0,0,0);
+//     const dateFilter = {};
+
+//     if (params.maxAge) dateFilter.$gte = new Date(today.getTime() - (params.maxAge * 86400000));
+//     if (params.minAge) dateFilter.$lte = new Date(today.getTime() - (params.minAge * 86400000));
+
+//     filter.createdOn = dateFilter;
+//   }
+
+//   const sortOptions = {
+//     newest: {createdOn: -1},
+//     oldest: {createdOn: 1},
+//     title: {title: 1, createdOn: -1},
+//     classification: {classification: 1, createdOn: -1},
+//     assignedTo: {assignedToUserName: 1, createdOn: -1},
+//     createdBy: {authorOfBug: 1, createdOn: -1}
+//   }
+
+//   const sortBy = sortOptions[params.sortBy] || sortOptions.newest;
+
+//   const bugs = await GetBugs(filter, pageSize, skip, sortBy);
+//   if (!bugs) {
+//     res.status(404).json({message: 'Bugs not found'});
+//     return;
+//   }
+//   else {
+//     res.status(200).json(bugs);
+//     return;
+//   }
+// });
+
+router.get('', async (req, res) => {
+  const {keywords, classification, closed, minAge, maxAge, page, limit, sortBy} = req.query;
+
+  const pageNum = parseInt(page) || 1;
+  const limitNum = parseInt(limit) || 0;
+  const skip = limitNum > 0 ? (pageNum - 1) * limitNum : 0;
 
   const filter = {};
 
-  if (params.keywords) filter.$text = {$search: params.keywords};
-  if (params.classification) filter.classification = params.classification;
-  if (params.closed == "true") filter.closed = true;
-  if (params.closed == "false") filter.closed = false;
+  if(keywords) filter.$text = {$search: keywords};
 
-  if (params.maxAge || params.minAge) {
+  if(classification) filter.classification = classification;
+
+  if(!closed) filter.closed = false;
+
+  if(minAge || maxAge) {
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
+
     const dateFilter = {};
 
-    if (params.maxAge) dateFilter.$gte = new Date(today.getTime() - (params.maxAge * 86400000));
-    if (params.minAge) dateFilter.$lte = new Date(today.getTime() - (params.minAge * 86400000));
+    if(maxAge) dateFilter.$gte = new Date(today.getTime() - maxAge * 24 * 60 * 60 * 1000); //Records must be newer than maxAge days
+    if(minAge) dateFilter.$lte = new Date(today.getTime() - minAge * 24 * 60 * 60 * 1000); //Records must be older than minAge days
 
     filter.createdOn = dateFilter;
   }
 
   const sortOptions = {
-    newest: {createdOn: -1},
-    oldest: {createdOn: 1},
-    title: {title: 1, createdOn: -1},
-    classification: {classification: 1, createdOn: -1},
-    assignedTo: {assignedToUserName: 1, createdOn: -1},
-    createdBy: {authorOfBug: 1, createdOn: -1}
-  }
+     createdBy: { createdBy: 1 },
+     assignedToUserName: { assignedToUserName: 1 },
+     classification: { classification: 1 },
+     title: { title: 1 },
+    newest: { createdAt: -1 },
+    oldest: { createdAt: 1 }
+  };
+  const sort = sortOptions[sortBy] || {title: 1};
+ 
+  
 
-  const sortBy = sortOptions[params.sortBy] || sortOptions.newest;
+  // debugBugs(`Sort is ${JSON.stringify(sort)}`);
 
-  const bugs = await GetBugs(filter, pageSize, skip, sortBy);
+  const bugs = await GetBugs(filter, sort, limitNum, skip); 
   if (!bugs) {
-    res.status(404).json({message: 'Bugs not found'});
-    return;
-  }
-  else {
+    res.status(500).send('Error retrieving bugs');
+  }else{
     res.status(200).json(bugs);
-    return;
   }
 });
 
@@ -84,7 +133,7 @@ router.get('/:bugId', isAuthenticated, hasPermission("canViewData"), validId('bu
 
 router.post('', isAuthenticated, hasPermission("canCreateBug"), validate(schemaCreateBug), async (req, res) => {//Create new bug
   const bugToAdd = req.body;
-  const authorId = req.session.userId;
+  const authorId = req.session.bugId;
   const author = await GetUserById(authorId);
   if (!author) {
     res.status(404).json({message: 'Author not found'});
@@ -227,7 +276,7 @@ router.patch('/:bugId', isAuthenticated, hasAnyPermission(["canEditAnyBug","canE
   res.status(200).json({message: `Bug ${id} updated successfully.`});
 });
 
-router.patch('/:bugId/classify', isAuthenticated, hasAnyPermission(["canClassifyAnyBug","canEditIfAssignedTo","canEditMyBug"]), validId('bugId'), validate(schemaClassifyBug), async (req, res) => {//Classify bug
+router.patch('/:bugId/classify', isAuthenticated, validId('bugId'), validate(schemaClassifyBug), async (req, res) => {//Classify bug   , hasAnyPermission(["canClassifyAnyBug","canEditIfAssignedTo","canEditMyBug"])
   const id = req.params.bugId;
   const bugToUpdate = req.body;
   const oldBug = await GetBugById(id);
@@ -242,49 +291,49 @@ router.patch('/:bugId/classify', isAuthenticated, hasAnyPermission(["canClassify
     return;
   }
 
-  let canEdit = false
-  const role1 = await GetPermissions(author.role[0]);
-  const role2 = await GetPermissions(author.role[1]);
-  const role3 = await GetPermissions(author.role[2]);
-  const role4 = await GetPermissions(author.role[3]);
-  const role5 = await GetPermissions(author.role[4]);
-  const rolesArray = [];
-  if (role1) {
-    rolesArray.push(role1);
-  }
-  if (role2) {
-    rolesArray.push(role2);
-  }
-  if (role3) {
-    rolesArray.push(role3);
-  }
-  if (role4) {
-    rolesArray.push(role4);
-  }
-  if (role5) {
-    rolesArray.push(role5);
-  }
-  for (let i=0;i<rolesArray.length;i++) {
-    if (rolesArray[i].permissions.canClassifyAnyBug) {
-      canEdit = true;
-    }
-    if (rolesArray[i].permissions.canEditIfAssignedTo) {
-      for (let j=0;j<oldBug.assignedToUserId.length;j++) {
-        if (authorId == oldBug.assignedToUserId[j]) {
-          canEdit = true;
-        }
-      }
-    }
-    if (rolesArray[i].permissions.canEditMyBug) {
-      if (authorId == oldBug.authorOfBug) {
-        canEdit = true;
-      }
-    }
-  }
-  if (!canEdit) {
-    res.status(403).json({message: 'Invalid permissions'});
-    return;
-  }
+  // let canEdit = false
+  // const role1 = await GetPermissions(author.role[0]);
+  // const role2 = await GetPermissions(author.role[1]);
+  // const role3 = await GetPermissions(author.role[2]);
+  // const role4 = await GetPermissions(author.role[3]);
+  // const role5 = await GetPermissions(author.role[4]);
+  // const rolesArray = [];
+  // if (role1) {
+  //   rolesArray.push(role1);
+  // }
+  // if (role2) {
+  //   rolesArray.push(role2);
+  // }
+  // if (role3) {
+  //   rolesArray.push(role3);
+  // }
+  // if (role4) {
+  //   rolesArray.push(role4);
+  // }
+  // if (role5) {
+  //   rolesArray.push(role5);
+  // }
+  // for (let i=0;i<rolesArray.length;i++) {
+  //   if (rolesArray[i].permissions.canClassifyAnyBug) {
+  //     canEdit = true;
+  //   }
+  //   if (rolesArray[i].permissions.canEditIfAssignedTo) {
+  //     for (let j=0;j<oldBug.assignedToUserId.length;j++) {
+  //       if (authorId == oldBug.assignedToUserId[j]) {
+  //         canEdit = true;
+  //       }
+  //     }
+  //   }
+  //   if (rolesArray[i].permissions.canEditMyBug) {
+  //     if (authorId == oldBug.authorOfBug) {
+  //       canEdit = true;
+  //     }
+  //   }
+  // }
+  // if (!canEdit) {
+  //   res.status(403).json({message: 'Invalid permissions'});
+  //   return;
+  // }
 
   let log = {
     timestamp: new Date(Date.now()),
@@ -301,6 +350,7 @@ router.patch('/:bugId/classify', isAuthenticated, hasAnyPermission(["canClassify
     log.update.push({field: "classifiedBy", oldValue: oldBug.classifiedBy, newValue: authorId});
   }
   const classifiedBug = await ClassifyBug(id,bugToUpdate.classification, authorId);
+  debugBug(bugToUpdate.classification);
   if (classifiedBug.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'})
     return;
@@ -309,7 +359,7 @@ router.patch('/:bugId/classify', isAuthenticated, hasAnyPermission(["canClassify
   res.status(200).json({message: `Bug ${id} classified successfully`})
 });
 
-router.patch('/:bugId/assign', isAuthenticated, hasAnyPermission(["canReassignAnyBug","canReassignIfAssignedTo","canEditMyBug"]), validId('bugId'), validate(schemaAssignBug), async (req, res) => {//Assign bug to user
+router.patch('/:bugId/assign', isAuthenticated, validId('bugId'), validate(schemaAssignBug), async (req, res) => {//Assign bug to user   , hasAnyPermission(["canReassignAnyBug","canReassignIfAssignedTo","canEditMyBug"])
   const id = req.params.bugId;
   const bugToAssign = req.body;
   const oldBug = await GetBugById(id);
@@ -330,50 +380,50 @@ router.patch('/:bugId/assign', isAuthenticated, hasAnyPermission(["canReassignAn
   }
   debugBug(userToAssign);
 
-  let canEdit = false
-  const role1 = await GetPermissions(author.role[0]);
-  const role2 = await GetPermissions(author.role[1]);
-  const role3 = await GetPermissions(author.role[2]);
-  const role4 = await GetPermissions(author.role[3]);
-  const role5 = await GetPermissions(author.role[4]);
-  const rolesArray = [];
-  if (role1) {
-    rolesArray.push(role1);
-  }
-  if (role2) {
-    rolesArray.push(role2);
-  }
-  if (role3) {
-    rolesArray.push(role3);
-  }
-  if (role4) {
-    rolesArray.push(role4);
-  }
-  if (role5) {
-    rolesArray.push(role5);
-  }
-  debugBug(rolesArray);
-  for (let i=0;i<rolesArray.length;i++) {
-    if (rolesArray[i].permissions.canReassignAnyBug) {
-      canEdit = true;
-    }
-    if (rolesArray[i].permissions.canReassignIfAssignedTo) {
-      for (let j=0;j<oldBug.assignedToUserId.length;j++) {
-        if (authorId == oldBug.assignedToUserId[j]) {
-          canEdit = true;
-        }
-      }
-    }
-    if (rolesArray[i].permissions.canEditMyBug) {
-      if (authorId == oldBug.authorOfBug) {
-        canEdit = true;
-      }
-    }
-  }
-  if (!canEdit) {
-    res.status(403).json({message: 'Invalid permissions'});
-    return;
-  }
+  // let canEdit = false
+  // const role1 = await GetPermissions(author.role[0]);
+  // const role2 = await GetPermissions(author.role[1]);
+  // const role3 = await GetPermissions(author.role[2]);
+  // const role4 = await GetPermissions(author.role[3]);
+  // const role5 = await GetPermissions(author.role[4]);
+  // const rolesArray = [];
+  // if (role1) {
+  //   rolesArray.push(role1);
+  // }
+  // if (role2) {
+  //   rolesArray.push(role2);
+  // }
+  // if (role3) {
+  //   rolesArray.push(role3);
+  // }
+  // if (role4) {
+  //   rolesArray.push(role4);
+  // }
+  // if (role5) {
+  //   rolesArray.push(role5);
+  // }
+  // debugBug(rolesArray);
+  // for (let i=0;i<rolesArray.length;i++) {
+  //   if (rolesArray[i].permissions.canReassignAnyBug) {
+  //     canEdit = true;
+  //   }
+  //   if (rolesArray[i].permissions.canReassignIfAssignedTo) {
+  //     for (let j=0;j<oldBug.assignedToUserId.length;j++) {
+  //       if (authorId == oldBug.assignedToUserId[j]) {
+  //         canEdit = true;
+  //       }
+  //     }
+  //   }
+  //   if (rolesArray[i].permissions.canEditMyBug) {
+  //     if (authorId == oldBug.authorOfBug) {
+  //       canEdit = true;
+  //     }
+  //   }
+  // }
+  // if (!canEdit) {
+  //   res.status(403).json({message: 'Invalid permissions'});
+  //   return;
+  // }
 
   let log = {
     timestamp: new Date(Date.now()),
@@ -398,7 +448,7 @@ router.patch('/:bugId/assign', isAuthenticated, hasAnyPermission(["canReassignAn
   res.status(200).json({message: `${userToAssign.fullName} assigned to bug ${id}`})
 });
 
-router.patch('/:bugId/close', isAuthenticated, hasPermission("canCloseAnyBug"), validId('bugId'), validate(schemaCloseBug), async (req, res) => {//Close bug
+router.patch('/:bugId/close', isAuthenticated, hasPermission("canCloseAnyBug"), validId('bugId'), validate(schemaCloseBug), async (req, res) => {//Close bug   , hasPermission("canCloseAnyBug")
   const id = req.params.bugId;
   const bugToClose = req.body;
   const oldBug = await GetBugById(id);
@@ -412,31 +462,31 @@ router.patch('/:bugId/close', isAuthenticated, hasPermission("canCloseAnyBug"), 
     res.status(404).json({message: 'Author not found'});
     return;
   }
-  if (!bugToClose.closed) {
-    res.status(400).json({message: 'To close a bug, the "closed" field must be true'});
-    return;
-  }
-    let canEdit = false;
-  author.role.forEach(r => {
-    if (r.canEditAnyBug) {
-      canEdit = true;
-    }
-    if (r.canEditIfAssignedTo) {
-      if (oldBug.assignedToUserId == authorId) {
-        canEdit = true;
-      }
-    }
-    if (r.canEditMyBug) {
-      if (oldBug.authorOfBug == authorId) {
-        canEdit == true;
-      }
-    }
-  });
+  // if (!bugToClose.closed) {
+  //   res.status(400).json({message: 'To close a bug, the "closed" field must be true'});
+  //   return;
+  // }
+  //   let canEdit = false;
+  // author.role.forEach(r => {
+  //   if (r.canEditAnyBug) {
+  //     canEdit = true;
+  //   }
+  //   if (r.canEditIfAssignedTo) {
+  //     if (oldBug.assignedToUserId == authorId) {
+  //       canEdit = true;
+  //     }
+  //   }
+  //   if (r.canEditMyBug) {
+  //     if (oldBug.authorOfBug == authorId) {
+  //       canEdit == true;
+  //     }
+  //   }
+  // });
 
-  if (!canEdit) {
-    res.status(403).json({message: 'Invalid credentials.'});
-    return;
-  }
+  // if (!canEdit) {
+  //   res.status(403).json({message: 'Invalid credentials.'});
+  //   return;
+  // }
 
   const log = {
     timestamp: new Date(Date.now()),
@@ -446,7 +496,7 @@ router.patch('/:bugId/close', isAuthenticated, hasPermission("canCloseAnyBug"), 
     update: [{field: "closed", oldValue: oldBug.closed, newValue: true}],
     preformedBy: author.email
   }
-  const closedBug = await CloseBug(id, authorId);
+  const closedBug = await CloseBug(id, bugToClose.closed, authorId);
   if (closedBug.modifiedCount === 0) {
     res.status(404).json({message: 'Bug not found'});
     return;
@@ -491,9 +541,10 @@ router.get('/:bugId/comments/:commentId', isAuthenticated, hasPermission("canVie
   res.status(200).json(comment);
 })
 
-router.post('/:bugId/comments', isAuthenticated, hasPermission("canAddComments"), validId('bugId'), validate(schemaAddComment), async (req, res) => {
+router.post('/:bugId/comments', isAuthenticated, validId('bugId'), validate(schemaAddComment), async (req, res) => {   // , hasPermission("canAddComments")
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
+  console.log("error check");
   if (!bugExists) {
     res.status(404).json({message: 'Bug not found'});
     return;
@@ -507,7 +558,7 @@ router.post('/:bugId/comments', isAuthenticated, hasPermission("canAddComments")
   const commentToAdd = req.body;
   commentToAdd.commentedOn = new Date(Date.now());
   commentToAdd.id = new ObjectId(genId());
-  commentToAdd.author = author.email;
+  commentToAdd.authorName = author.name || author.fullName || author.email;
   debugBug(commentToAdd);
   const addedComment = await AddComment(bugId, commentToAdd);
   debugBug(addedComment);
