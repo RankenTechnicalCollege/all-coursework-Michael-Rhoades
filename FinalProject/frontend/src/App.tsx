@@ -13,8 +13,12 @@ import { UserEdit } from '@/components/userEdit'
 import AppLayout from '@/components/layouts/app-layout'
 import { LandingPage } from '@/components/landing-page'
 import { BugEdit } from '@/components/bugEdit'
-import { BugCreate } from './components/bugCreate';
-import { BugCommentAdd } from './components/bugCommentAdd';
+import { BugCreate } from '@/components/bugCreate';
+import { BugCommentAdd } from '@/components/bugCommentAdd';
+import { BugTestEdit } from '@/components/bugTestEdit';
+import { BugTestDelete } from '@/components/bugTestDelete';
+import { UserMe } from '@/components/userMe';
+import { UserDelete } from '@/components/userDelete';
 
 function App() {
 
@@ -43,11 +47,15 @@ function App() {
             <Route path='/login' element={<Login1 />} />
             <Route path='/sign-up' element={<Signup1 />} />
             <Route path='/user/list' element={<UserList />} />
+            <Route path='/user/me' element={<UserMe showError={showError} showSuccess={showSuccess} />} />
             <Route path='/user/:userId/edit' element={<UserEdit showError={showError} showSuccess={showSuccess} />} />
+            <Route path='/user/:userId/delete' element={<UserDelete showError={showError} showSuccess={showSuccess} />} />
             <Route path='/bug/list' element={<BugList />} />
             <Route path='/bug/report' element={<BugCreate showError={showError} showSuccess={showSuccess} />} />
             <Route path='/bug/:bugId/edit' element={<BugEdit showError={showError} showSuccess={showSuccess} />} />
             <Route path='/bug/:bugId/comments' element={<BugCommentAdd showError={showError} showSuccess={showSuccess} />} />
+            <Route path='/bug/:bugId/test/:testId/edit' element={<BugTestEdit showError={showError} showSuccess={showSuccess} />} />
+            <Route path='/bug/:bugId/test/:testId/delete' element={<BugTestDelete showError={showError} showSuccess={showSuccess} />} />
           </Route>
         </Routes>
       

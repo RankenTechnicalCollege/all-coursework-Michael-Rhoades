@@ -92,12 +92,12 @@ const Navbar1 = ({
     {
       title: "Bug List",
       url: "/bug/list",
-      requiredRole: ["admin", "developer"],
+      requiredRole: ["developer", "business analyst", "quality analyst", "product manager", "technical manager", "admin"],
     },
     {
       title: "Add Bug",
       url: "/bug/report",
-      requiredRole: ["admin", "developer"],
+      requiredRole: ["developer", "business analyst", "quality analyst", "product manager", "technical manager", "admin"],
     },
   ],
   auth = {
@@ -160,9 +160,9 @@ const Navbar1 = ({
               <span className="text-sm">Loading...</span>
             ) : extendedSession ? (
               <>
-                <span className="text-sm font-medium">
+                <a className="text-sm font-medium" href="/user/me">
                   Welcome, {extendedSession.user.name || extendedSession.user.email}
-                </span>
+                </a>
                 <Button variant="outline" size="sm" onClick={handleSignOut}>
                   Sign Out
                 </Button>

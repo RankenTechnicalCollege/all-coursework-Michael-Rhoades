@@ -50,6 +50,7 @@ const UserListItem = ({ user }: { user: User }) => {
           <Badge variant="secondary">No role</Badge>
         )}
       </div>
+        <Button variant="destructive" size="sm" onClick={() => navigate(`/user/${user._id}/delete`)}>Delete</Button>
     </div>
   )
 }

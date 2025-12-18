@@ -54,9 +54,9 @@ async function Login(email, password) {
   return await db.collection("user").findOne({email: email, password: password});
 }
 
-async function UpdateUser(id, fullName, role) {
+async function UpdateUser(id, fullName, email, role) {
   const db = await connectToDatabase();
-  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {fullName: fullName, role: role, updatedAt: new Date(Date.now())}});
+  return await db.collection("user").updateOne({_id: new ObjectId(id)},{$set: {fullName: fullName, email: email, role: role, updatedAt: new Date(Date.now())}});
 }
 
 async function DeleteUser(id) {
@@ -249,4 +249,14 @@ async function GetPermissions(role) {
   return await db.collection("role").findOne({role:role})
 }
 
-export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs, getClient, getDatabase, connectToDatabase, AddEdit, GetPermissions};
+async function AddWorkHours(bugId, workHoursLogged) {
+  const db = await connectToDatabase();
+  return await db.collection("bugs").updateOne({_id: new ObjectId(bugId)},{$push: {workHoursLogged: workHoursLogged}, $set: {lastUpdated: new Date(Date.now())}});
+}
+
+async function UpdateFixed(bugId, fixInVersion, fixedOnDate) {
+  const db = await connectToDatabase();
+  return await db.collection("bugs").updateOne({_id: new ObjectId(bugId)},{$set: {fixInVersion: fixInVersion, fixedOnDate: fixedOnDate, lastUpdated: new Date(Date.now())}});
+}
+
+export{GetUserById, GetUserByEmail, AddUser, Login, UpdateUser, DeleteUser, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, GetUsers, GetBugs, getClient, getDatabase, connectToDatabase, AddEdit, GetPermissions, AddWorkHours, UpdateFixed};

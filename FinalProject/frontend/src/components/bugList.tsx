@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
 import type { Bug } from "@/types/bug";
+import { Label } from "./ui/label";
 
 const BugList = () => {
   const [bugs, setBugs] = useState<Bug[]>([]);
@@ -85,7 +86,7 @@ const BugList = () => {
           <Button onClick={handleSearch}>Search</Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Classification</label>
             <Select value={classification} onValueChange={setClassification}>
@@ -121,7 +122,16 @@ const BugList = () => {
               onChange={(e) => setMaxAge(e.target.value)}
             />
           </div>
-          <Checkbox onClick={toggleClosed}>Closed</Checkbox>
+          <div className="space-y-2 flex items-center">
+            <Checkbox onClick={toggleClosed} id="closed">Closed</Checkbox>
+            <Label
+              htmlFor={"closed"}
+              className="text-sm font-normal cursor-pointer"
+            >
+              Show Closed Bugs
+            </Label>
+          </div>
+          
           <div className="space-y-2">
             <label className="text-sm font-medium">Sort By</label>
             <Select value={sortBy} onValueChange={setSortBy}>

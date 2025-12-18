@@ -4,7 +4,7 @@ const router = express.Router();
 import debug from 'debug';  
 const debugBug = debug('app:BugRouter');
 
-import { GetBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, AddEdit, GetPermissions } from "../../database.js";
+import { GetBugs, GetBugById, AddBug, UpdateBug, ClassifyBug, AssignBug, CloseBug, GetUserById, GetComments, GetCommentById, AddComment, GetTestCases, GetTestCaseById, AddTestCase, UpdateTestCase, DeleteTestCase, AddEdit, GetPermissions, AddWorkHours, UpdateFixed } from "../../database.js";
 
 import { validate, validId } from '../../Middleware/validator.js';
 import { isAuthenticated } from "../../Middleware/isAuthenticated.js";
@@ -131,11 +131,13 @@ router.get('/:bugId', isAuthenticated, hasPermission("canViewData"), validId('bu
   res.status(200).json(bug);
 });
 
-router.post('', isAuthenticated, hasPermission("canCreateBug"), validate(schemaCreateBug), async (req, res) => {//Create new bug
+router.post('', isAuthenticated, validate(schemaCreateBug), async (req, res) => {//Create new bug   , hasPermission("canCreateBug")
+  
   const bugToAdd = req.body;
-  const authorId = req.session.bugId;
+  const authorId = req.session.userId;
   const author = await GetUserById(authorId);
   if (!author) {
+    console.log("author not found");
     res.status(404).json({message: 'Author not found'});
     return;
   }
@@ -214,12 +216,15 @@ router.patch('/:bugId', isAuthenticated, hasAnyPermission(["canEditAnyBug","canE
       canEdit = true;
     }
     if (rolesArray[i].permissions.canEditIfAssignedTo) {
-      if (oldBug.assignedToUserId) {
-        for (let j=0;j<oldBug.assignedToUserId.length;j++) {
-          if (authorId == oldBug.assignedToUserId[j]) {
-            canEdit = true;
-          }
-        }
+      // if (oldBug.assignedToUserId) {
+      //   for (let j=0;j<oldBug.assignedToUserId.length;j++) {
+      //     if (authorId == oldBug.assignedToUserId[j]) {
+      //       canEdit = true;
+      //     }
+      //   }
+      // }
+      if (oldBug.assignedToUserId == authorId) {
+        canEdit = true;
       }
     }
     if (rolesArray[i].permissions.canEditMyBug) {
@@ -276,7 +281,7 @@ router.patch('/:bugId', isAuthenticated, hasAnyPermission(["canEditAnyBug","canE
   res.status(200).json({message: `Bug ${id} updated successfully.`});
 });
 
-router.patch('/:bugId/classify', isAuthenticated, validId('bugId'), validate(schemaClassifyBug), async (req, res) => {//Classify bug   , hasAnyPermission(["canClassifyAnyBug","canEditIfAssignedTo","canEditMyBug"])
+router.patch('/:bugId/classify', isAuthenticated, hasAnyPermission(["canClassifyAnyBug"]), validId('bugId'), validate(schemaClassifyBug), async (req, res) => {//Classify bug   ,"canEditIfAssignedTo","canEditMyBug"
   const id = req.params.bugId;
   const bugToUpdate = req.body;
   const oldBug = await GetBugById(id);
@@ -291,49 +296,52 @@ router.patch('/:bugId/classify', isAuthenticated, validId('bugId'), validate(sch
     return;
   }
 
-  // let canEdit = false
-  // const role1 = await GetPermissions(author.role[0]);
-  // const role2 = await GetPermissions(author.role[1]);
-  // const role3 = await GetPermissions(author.role[2]);
-  // const role4 = await GetPermissions(author.role[3]);
-  // const role5 = await GetPermissions(author.role[4]);
-  // const rolesArray = [];
-  // if (role1) {
-  //   rolesArray.push(role1);
+  // // let canEdit = false
+  // // const role1 = await GetPermissions(author.role[0]);
+  // // const role2 = await GetPermissions(author.role[1]);
+  // // const role3 = await GetPermissions(author.role[2]);
+  // // const role4 = await GetPermissions(author.role[3]);
+  // // const role5 = await GetPermissions(author.role[4]);
+  // // const rolesArray = [];
+  // // if (role1) {
+  // //   rolesArray.push(role1);
+  // // }
+  // // if (role2) {
+  // //   rolesArray.push(role2);
+  // // }
+  // // if (role3) {
+  // //   rolesArray.push(role3);
+  // // }
+  // // if (role4) {
+  // //   rolesArray.push(role4);
+  // // }
+  // // if (role5) {
+  // //   rolesArray.push(role5);
+  // // }
+  // // for (let i=0;i<rolesArray.length;i++) {
+  // //   if (rolesArray[i].permissions.canClassifyAnyBug) {
+  // //     canEdit = true;
+  // //   }
+  //   // if (rolesArray[i].permissions.canEditIfAssignedTo) {
+  //   //   // for (let j=0;j<oldBug.assignedToUserId.length;j++) {
+  //   //   //   if (authorId == oldBug.assignedToUserId[j]) {
+  //   //   //     canEdit = true;
+  //   //   //   }
+  //   //   // }
+  //   //   if (oldBug.assignedToUserId == authorId) {
+  //   //     canEdit = true;
+  //   //   }
+  //   // }
+  //   // if (rolesArray[i].permissions.canEditMyBug) {
+  //   //   if (authorId == oldBug.authorOfBug) {
+  //   //     canEdit = true;
+  //   //   }
+  //   // }
   // }
-  // if (role2) {
-  //   rolesArray.push(role2);
-  // }
-  // if (role3) {
-  //   rolesArray.push(role3);
-  // }
-  // if (role4) {
-  //   rolesArray.push(role4);
-  // }
-  // if (role5) {
-  //   rolesArray.push(role5);
-  // }
-  // for (let i=0;i<rolesArray.length;i++) {
-  //   if (rolesArray[i].permissions.canClassifyAnyBug) {
-  //     canEdit = true;
-  //   }
-  //   if (rolesArray[i].permissions.canEditIfAssignedTo) {
-  //     for (let j=0;j<oldBug.assignedToUserId.length;j++) {
-  //       if (authorId == oldBug.assignedToUserId[j]) {
-  //         canEdit = true;
-  //       }
-  //     }
-  //   }
-  //   if (rolesArray[i].permissions.canEditMyBug) {
-  //     if (authorId == oldBug.authorOfBug) {
-  //       canEdit = true;
-  //     }
-  //   }
-  // }
-  // if (!canEdit) {
-  //   res.status(403).json({message: 'Invalid permissions'});
-  //   return;
-  // }
+  // // if (!canEdit) {
+  // //   res.status(403).json({message: 'Invalid permissions'});
+  // //   return;
+  // // }
 
   let log = {
     timestamp: new Date(Date.now()),
@@ -359,7 +367,7 @@ router.patch('/:bugId/classify', isAuthenticated, validId('bugId'), validate(sch
   res.status(200).json({message: `Bug ${id} classified successfully`})
 });
 
-router.patch('/:bugId/assign', isAuthenticated, validId('bugId'), validate(schemaAssignBug), async (req, res) => {//Assign bug to user   , hasAnyPermission(["canReassignAnyBug","canReassignIfAssignedTo","canEditMyBug"])
+router.patch('/:bugId/assign', isAuthenticated, validId('bugId'), hasAnyPermission(["canReassignAnyBug","canReassignIfAssignedTo"]), validate(schemaAssignBug), async (req, res) => {//Assign bug to user   ,"canEditMyBug"
   const id = req.params.bugId;
   const bugToAssign = req.body;
   const oldBug = await GetBugById(id);
@@ -378,52 +386,60 @@ router.patch('/:bugId/assign', isAuthenticated, validId('bugId'), validate(schem
     res.status(404).json({message: 'User not found'});
     return;
   }
+  if (!(userToAssign.role[0] == "developer" || userToAssign.role[1] == "developer" || userToAssign.role[2] == "developer" || userToAssign.role[3] == "developer" || userToAssign.role[4] == "developer") && !(userToAssign.role[0] == "quality analyst" || userToAssign.role[1] == "quality analyst" || userToAssign.role[2] == "quality analyst" || userToAssign.role[3] == "quality analyst" || userToAssign.role[4] == "quality analyst") && !(userToAssign.role[0] == "business analyst" || userToAssign.role[1] == "business analyst" || userToAssign.role[2] == "business analyst" || userToAssign.role[3] == "business analyst" || userToAssign.role[4] == "business analyst")) {
+    console.log("user to assign does not have correct role");
+    res.status(400).json({message: 'User must have developer, quality analyst, or business analyst role to be assigned bugs'});
+    return;
+  }
   debugBug(userToAssign);
 
-  // let canEdit = false
-  // const role1 = await GetPermissions(author.role[0]);
-  // const role2 = await GetPermissions(author.role[1]);
-  // const role3 = await GetPermissions(author.role[2]);
-  // const role4 = await GetPermissions(author.role[3]);
-  // const role5 = await GetPermissions(author.role[4]);
-  // const rolesArray = [];
-  // if (role1) {
-  //   rolesArray.push(role1);
-  // }
-  // if (role2) {
-  //   rolesArray.push(role2);
-  // }
-  // if (role3) {
-  //   rolesArray.push(role3);
-  // }
-  // if (role4) {
-  //   rolesArray.push(role4);
-  // }
-  // if (role5) {
-  //   rolesArray.push(role5);
-  // }
-  // debugBug(rolesArray);
-  // for (let i=0;i<rolesArray.length;i++) {
-  //   if (rolesArray[i].permissions.canReassignAnyBug) {
-  //     canEdit = true;
-  //   }
-  //   if (rolesArray[i].permissions.canReassignIfAssignedTo) {
-  //     for (let j=0;j<oldBug.assignedToUserId.length;j++) {
-  //       if (authorId == oldBug.assignedToUserId[j]) {
-  //         canEdit = true;
-  //       }
-  //     }
-  //   }
-  //   if (rolesArray[i].permissions.canEditMyBug) {
-  //     if (authorId == oldBug.authorOfBug) {
-  //       canEdit = true;
-  //     }
-  //   }
-  // }
-  // if (!canEdit) {
-  //   res.status(403).json({message: 'Invalid permissions'});
-  //   return;
-  // }
+  let canEdit = false
+  const role1 = await GetPermissions(author.role[0]);
+  const role2 = await GetPermissions(author.role[1]);
+  const role3 = await GetPermissions(author.role[2]);
+  const role4 = await GetPermissions(author.role[3]);
+  const role5 = await GetPermissions(author.role[4]);
+  const rolesArray = [];
+  if (role1) {
+    rolesArray.push(role1);
+  }
+  if (role2) {
+    rolesArray.push(role2);
+  }
+  if (role3) {
+    rolesArray.push(role3);
+  }
+  if (role4) {
+    rolesArray.push(role4);
+  }
+  if (role5) {
+    rolesArray.push(role5);
+  }
+  debugBug(rolesArray);
+  for (let i=0;i<rolesArray.length;i++) {
+    if (rolesArray[i].permissions.canReassignAnyBug) {
+      canEdit = true;
+    }
+    if (rolesArray[i].permissions.canReassignIfAssignedTo) {
+      // for (let j=0;j<oldBug.assignedToUserId.length;j++) {
+      //   if (authorId == oldBug.assignedToUserId[j]) {
+      //     canEdit = true;
+      //   }
+      // }
+      if (oldBug.assignedToUserId == authorId) {
+        canEdit = true;
+      }
+    }
+    // if (rolesArray[i].permissions.canEditMyBug) {
+    //   if (authorId == oldBug.authorOfBug) {
+    //     canEdit = true;
+    //   }
+    // }
+  }
+  if (!canEdit) {
+    res.status(403).json({message: 'Invalid permissions'});
+    return;
+  }
 
   let log = {
     timestamp: new Date(Date.now()),
@@ -604,7 +620,8 @@ router.get('/:bugId/tests/:testCaseId', isAuthenticated, hasPermission("canViewD
   res.status(200).json(testCase);
 });
 
-router.post('/:bugId/tests', isAuthenticated, hasPermission("canAddTestCase"), validId('bugId'), validate(schemaAddTestCase), async (req, res) => {
+router.post('/:bugId/tests', isAuthenticated, hasPermission("canAddTestCase"), validId('bugId'), validate(schemaAddTestCase), async (req, res) => {   // 
+  console.log("adding test case");
   const bugId = req.params.bugId;
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
@@ -638,8 +655,10 @@ router.post('/:bugId/tests', isAuthenticated, hasPermission("canAddTestCase"), v
   res.status(201).json({message: `Test case added to bug ${bugId}`});
 });
 
-router.patch('/:bugId/tests/:testCaseId', isAuthenticated, hasPermission("canEditTestCase"), validId('bugId'), validId('testCaseId'), validate(schemaUpdateTestCase), async (req, res) => {
+router.patch('/:bugId/tests/:testCaseId', isAuthenticated, hasPermission("canEditTestCase"), validId('testCaseId'), validId('bugId'), validate(schemaUpdateTestCase), async (req, res) => {   // 
+  console.log("updating test case");
   const bugId = req.params.bugId;
+
   const bugExists = await GetBugById(bugId);
   if (!bugExists) {
     res.status(404).json({message: 'Bug not found'});
@@ -663,7 +682,7 @@ router.patch('/:bugId/tests/:testCaseId', isAuthenticated, hasPermission("canEdi
     col: "bug",
     op: "updateTestCase",
     target: bugId,
-    testCaseId: testCaseToAdd.id,
+    testCaseId: testCaseId,
     edits: [],
     preformedBy: author.email
   }
@@ -712,7 +731,7 @@ router.delete('/:bugId/tests/:testCaseId', isAuthenticated, hasPermission("canDe
     return;
   }
   testCaseId = new ObjectId(req.params.testCaseId);
-  log = {
+  const log = {
     timestamp: new Date(Date.now()),
     col: "bug",
     op: "deleteTestCase",
@@ -729,6 +748,82 @@ router.delete('/:bugId/tests/:testCaseId', isAuthenticated, hasPermission("canDe
   await AddEdit(log);
   res.status(200).json({message: `Test case ${testCaseId} deleted successfully.`});
 });
+
+
+
+// Extra routes
+
+router.post('/:bugId/log-work', isAuthenticated, hasPermission("canLogHours"), validId('bugId'), async (req, res) => {
+  const bugId = req.params.bugId;
+  const bugExists = await GetBugById(bugId);
+  if (!bugExists) {
+    res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
+  const hoursToLog = req.body;
+
+  const workHoursLogged = {userId: authorId, hours: hoursToLog.hours, date: new Date(Date.now())}
+
+  const log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "Add work hours",
+    target: bugId,
+    update: {field: "workHoursLogged", user: author._id, hours: hoursToLog.hours},
+    preformedBy: author.email
+  }
+  const addedHours = await AddWorkHours(bugId, workHoursLogged);
+  debugBug(addedHours);
+  if (addedHours.modifiedCount === 0) {
+    res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  await AddEdit(log);
+  res.status(200).json({message: `Hours logged successfully.`});
+});
+
+router.patch('/:bugId/fixed', isAuthenticated, hasPermission("canApplyFixInVersion"), hasPermission("canAssignVersionDate"), validId('bugId'), async (req, res) => {
+  const bugId = req.params.bugId;
+  const bugExists = await GetBugById(bugId);
+  if (!bugExists) {
+    res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  const authorId = req.session.userId;
+  const author = await GetUserById(authorId);
+  if (!author) {
+    res.status(404).json({message: 'Author not found'});
+    return;
+  }
+  const fixedInVersion = req.body.fixInVersion;
+  const fixedOnDate = req.body.fixedOnDate;
+  console.log(req.params)
+
+  const log = {
+    timestamp: new Date(Date.now()),
+    col: "bug",
+    op: "Updated Fixed Bug Information",
+    target: bugId,
+    update: [{field: "fixInVersion", value: fixedInVersion}, {field: "fixedOnDate", value: fixedOnDate}],
+    preformedBy: author.email
+  }
+  const addedHours = await UpdateFixed(bugId, fixedInVersion, fixedOnDate);
+  console.log(fixedInVersion, fixedOnDate)
+  debugBug(addedHours);
+  if (addedHours.modifiedCount === 0) {
+    res.status(404).json({message: 'Bug not found'});
+    return;
+  }
+  await AddEdit(log);
+  res.status(200).json({message: `Fixes added successfully.`});
+});
+
 
 
 export {router as bugRouter};

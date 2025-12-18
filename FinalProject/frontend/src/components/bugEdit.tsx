@@ -10,13 +10,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { z } from "zod";
 import bugEditSchema from "@/schemas/bugEditSchema";
 import { BugCommentItem } from "@/components/bugCommentItem";
-import { Pencil, BookOpenText, X, ExternalLink, Save } from "lucide-react";
+import { Pencil, BookOpenText, X, ExternalLink, Save, PlusCircle, CheckCircle2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import bugClassifySchema from "@/schemas/bugClassifySchema";
 import type { User } from "@/types/user";
 import bugAssignSchema from "@/schemas/bugAssignSchema";
 import bugCloseSchema from "@/schemas/bugCloseSchema";
 import bugCommentSchema from "@/schemas/bugCommentSchema";
+import bugTestSchema from "@/schemas/bugTestSchema";
+import { BugTestItem } from "./bugTestItem";
+// import bugHoursSchema from "@/schemas/bugHoursSchema";
+import bugFixSchema from "@/schemas/bugFixSchema";
 
 export function BugEdit({ showError, showSuccess }: { showError: (message: string) => void; showSuccess: (message: string) => void }) {
   const {bugId} = useParams();
@@ -49,6 +53,20 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
 
   const [formDataComment, setFormDataComment] = useState({
     text: "",
+  });
+
+  const [formDataTest, setFormDataTest] = useState({
+    title: "",
+    result: "",
+  });
+
+  const [formDataHours, setFormDataHours] = useState({
+    hours: 0,
+  });
+
+  const [formDataFix, setFormDataFix] = useState({
+    fixInVersion: "",
+    fixedOnDate: "",
   });
 
   useEffect(() => {
@@ -113,6 +131,21 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
   const handleInputChangeComment = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormDataComment((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleInputChangeTest = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormDataTest((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleInputChangeHours = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormDataHours((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleInputChangeFix = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormDataFix((prev) => ({ ...prev, [name]: value }));
   };
 
   // const handleSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,7 +333,7 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
     }
   }
 
-    const handleSubmitComment = async (e: React.FormEvent) => {
+  const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
@@ -310,6 +343,142 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
       const validatedData = bugCommentSchema.parse(formDataComment);
       console.log("error spot 1")
       await axios.post(`${import.meta.env.VITE_API_URL}/bugs/${bugId}/comments`, validatedData);
+      console.log("error spot 2")
+      showSuccess("Bug updated successfully");
+      navigate("/bug/list");
+    }
+    catch (err) {
+      console.log("error spot 3")
+      if (err instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        err.issues.forEach((issue) => {
+          if (issue.path.length > 0) {
+            fieldErrors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setValidationErrors(fieldErrors);
+        setSaving(false);
+        return;
+      }
+      const axiosError = err as AxiosError<{
+        type: string;
+        fields: Record<string, string>;
+        message: string;
+      }>;
+
+      if (axiosError.response?.status === 400 && axiosError.response?.data?.type === "ValidationFailed") {
+        setValidationErrors(axiosError.response.data.fields || {});
+        setSaving(false);
+        return;
+      }
+
+      showError("Failed to update bug");
+      setSaving(false);
+      console.error("Error updating bug:", err);
+    }
+  }
+
+  const handleSubmitTest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setValidationErrors({});
+
+    try {
+      const validatedData = bugTestSchema.parse(formDataTest);
+      console.log("error spot x1")
+      await axios.post(`${import.meta.env.VITE_API_URL}/bugs/${bugId}/tests`, validatedData);
+      console.log("error spot x2")
+      showSuccess("Bug updated successfully");
+      navigate("/bug/list");
+    }
+    catch (err) {
+      console.log("error spot x3")
+      if (err instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        err.issues.forEach((issue) => {
+          if (issue.path.length > 0) {
+            fieldErrors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setValidationErrors(fieldErrors);
+        setSaving(false);
+        return;
+      }
+      const axiosError = err as AxiosError<{
+        type: string;
+        fields: Record<string, string>;
+        message: string;
+      }>;
+
+      if (axiosError.response?.status === 400 && axiosError.response?.data?.type === "ValidationFailed") {
+        setValidationErrors(axiosError.response.data.fields || {});
+        setSaving(false);
+        return;
+      }
+
+      showError("Failed to update bug");
+      setSaving(false);
+      console.error("Error updating bug:", err);
+    }
+  }
+
+  const handleSubmitHours = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setValidationErrors({});
+    console.log(formDataHours);
+
+    try {
+      // const validatedData = bugHoursSchema.parse(formDataHours);   // WHY IS THIS NOT WORKING???
+      console.log("error spot y1")
+      await axios.post(`${import.meta.env.VITE_API_URL}/bugs/${bugId}/log-work`, formDataHours);
+      console.log("error spot y2")
+      showSuccess("Bug updated successfully");
+      navigate("/bug/list");
+    }
+    catch (err) {
+      console.log("error spot y3")
+      if (err instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        err.issues.forEach((issue) => {
+          if (issue.path.length > 0) {
+            fieldErrors[issue.path[0] as string] = issue.message;
+          }
+        });
+        setValidationErrors(fieldErrors);
+        setSaving(false);
+        return;
+      }
+      const axiosError = err as AxiosError<{
+        type: string;
+        fields: Record<string, string>;
+        message: string;
+      }>;
+
+      if (axiosError.response?.status === 400 && axiosError.response?.data?.type === "ValidationFailed") {
+        setValidationErrors(axiosError.response.data.fields || {});
+        setSaving(false);
+        return;
+      }
+
+      showError("Failed to add work hours");
+      setSaving(false);
+      console.error("Error updating bug:", err);
+    }
+  }
+
+  const handleSubmitFix = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setValidationErrors({});
+
+    try {
+      const validatedData = bugFixSchema.parse(formDataFix);
+      console.log("error spot 1", validatedData)
+      await axios.patch(`${import.meta.env.VITE_API_URL}/bugs/${bugId}/fixed`, validatedData);
       console.log("error spot 2")
       showSuccess("Bug updated successfully");
       navigate("/bug/list");
@@ -378,6 +547,16 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
       </div>
     );
   }
+
+  if (bug.testCases === undefined) {
+    console.log("No test cases found for this bug.");
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-lg">Bug test cases not found</p>
+      </div>
+    );
+  }
+
 
   return (
     <>
@@ -465,50 +644,50 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
         ))}
       </div>
       <div className="container mx-auto p-6 max-w-2xl">
-      <Card>
-        <CardHeader>
-          <CardTitle>Post comment</CardTitle>
-        </CardHeader>
-        <form onSubmit={handleSubmitComment}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="text">Text</Label>
-              <Input
-                id="text"
-                name="text"
-                type="text"
-                value={formDataComment.text}
-                onChange={handleInputChangeComment}
-              />
-              {validationErrors.text && (
-                <p className="text-sm text-red-500">{validationErrors.text}</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Post comment</CardTitle>
+          </CardHeader>
+          <form onSubmit={handleSubmitComment}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded">
+                  {error}
+                </div>
               )}
-            </div>
 
-          </CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="text">Text</Label>
+                <Input
+                  id="text"
+                  name="text"
+                  type="text"
+                  value={formDataComment.text}
+                  onChange={handleInputChangeComment}
+                />
+                {validationErrors.text && (
+                  <p className="text-sm text-red-500">{validationErrors.text}</p>
+                )}
+              </div>
 
-          <CardFooter className="flex gap-2">
-            <Button type="submit">
-              Post<Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/bug/list")}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>      
+            </CardContent>
+
+            <CardFooter className="flex gap-2">
+              <Button type="submit">
+                Post<Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/bug/list")}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>      
     <form onSubmit={handleSubmitClassify}>
         <div className="flex gap-2">
           <Select name="classification" onValueChange={(value) => setFormDataClassify((prev) => ({ ...prev, classification: value }))}>
@@ -556,6 +735,111 @@ export function BugEdit({ showError, showSuccess }: { showError: (message: strin
           </Select>
           <Button type="submit">
             Close Bug<X className="h-4 w-4" />
+          </Button>
+        </div>
+      </form>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {bug.testCases.map((testCase) => (
+          <Card key={testCase.id}>
+            <CardContent className="pt-6">
+              <BugTestItem test={testCase} bug={bug} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="container mx-auto p-6 max-w-2xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Add Test Case</CardTitle>
+          </CardHeader>
+          <form onSubmit={handleSubmitTest}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  type="text"
+                  value={formDataTest.title}
+                  onChange={handleInputChangeTest}
+                />
+                {validationErrors.title && (
+                  <p className="text-sm text-red-500">{validationErrors.title}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="result">Result</Label>
+                <Input
+                  id="result"
+                  name="result"
+                  type="text"
+                  value={formDataTest.result}
+                  onChange={handleInputChangeTest}
+                />
+                {validationErrors.result && (
+                  <p className="text-sm text-red-500">{validationErrors.result}</p>
+                )}
+              </div>
+
+            </CardContent>
+
+            <CardFooter className="flex gap-2">
+              <Button type="submit">
+                Add<PlusCircle className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/bug/list")}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+      <form onSubmit={handleSubmitHours}>
+        <div className="flex gap-2">
+          <Input
+            id="hours"
+            name="hours"
+            type="number"
+            placeholder="Enter work hours"
+            onChange={handleInputChangeHours}
+          />
+          <Button type="submit">
+            Log Hours<ExternalLink className="h-4 w-4" />
+          </Button>
+        </div>
+      </form>
+      <form onSubmit={handleSubmitFix}>
+        <div className="flex gap-2">
+          <Input
+            id="fixInVersion"
+            name="fixInVersion"
+            type="text"
+            placeholder="Fixed in version"
+            value={formDataFix.fixInVersion}
+            onChange={handleInputChangeFix}
+          />
+          <Input
+            id="fixedOnDate"
+            name="fixedOnDate"
+            type="text"
+            placeholder="Fixed on date"
+            value={formDataFix.fixedOnDate}
+            onChange={handleInputChangeFix}
+          />
+          <Button type="submit">
+             Submit<CheckCircle2 className="h-4 w-4" />
           </Button>
         </div>
       </form>

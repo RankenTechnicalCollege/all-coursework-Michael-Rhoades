@@ -165,12 +165,12 @@ router.patch("/me", isAuthenticated, validate(schemaUpdateUser), async (req, res
 
   //const password = userToUpdate.password ? userToUpdate.password : oldUser.password;
   const fullName = userToUpdate.fullName ? userToUpdate.fullName : oldUser.fullName;
-  const givenName = userToUpdate.givenName ? userToUpdate.givenName : oldUser.givenName;
-  const familyName = userToUpdate.familyName ? userToUpdate.familyName : oldUser.familyName;
+  const email = userToUpdate.email ? userToUpdate.email : oldUser.email;
+
   const role = oldUser.role;
-  debugUser(fullName, givenName, familyName, role)
-  
-  const updatedUser = await UpdateUser(userId, fullName, givenName, familyName, role);
+  debugUser(fullName, email, role)
+
+  const updatedUser = await UpdateUser(userId, fullName, email, role);
   debugUser(JSON.stringify(updatedUser))
   if (updatedUser.modifiedCount === 0) {
     res.status(404).json({message: 'User not updated'});
@@ -197,6 +197,7 @@ router.patch("/:userId", isAuthenticated, hasPermission("canEditAnyUser"), valid
   //   password = oldUser.password;
   // }
   const fullName = userToUpdate.fullName ? userToUpdate.fullName : oldUser.fullName;
+  const email = userToUpdate.email ? userToUpdate.email : oldUser.email;
   let role;
   if (id == authorId || userToUpdate.role == oldUser.role || !userToUpdate.role) {
     role = oldUser.role;
@@ -205,7 +206,7 @@ router.patch("/:userId", isAuthenticated, hasPermission("canEditAnyUser"), valid
     role = userToUpdate.role;
   }
 
-  const updatedUser = await UpdateUser(id,fullName,role);
+  const updatedUser = await UpdateUser(id,fullName, email, role);
   if (updatedUser.modifiedCount === 0) {
     res.status(404).json({message: 'User not found'});
     return;
